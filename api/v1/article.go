@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"notes-cloud/model"
-	"notes-cloud/utils/errmsg"
+	"notes-cloud/utils/result"
 )
 
 // GetArt 查询文章列表
@@ -13,6 +13,6 @@ func GetArt(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  code,
 		"data":    data,
-		"message": errmsg.GetErrMsg(code),
+		"message": result.GetMsg(code),
 	})
 }

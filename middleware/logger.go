@@ -3,12 +3,11 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"notes-cloud/utils"
+	"notes-cloud/config"
 	"time"
 )
 
 func Log() gin.HandlerFunc {
-
 
 	return func(c *gin.Context) {
 		// 开始时间
@@ -28,12 +27,12 @@ func Log() gin.HandlerFunc {
 		// 请求IP
 		clientIP := c.ClientIP()
 		// 日志格式
-		utils.Logger.WithFields(logrus.Fields{
-			"status_code"  : statusCode,
-			"latency_time" : latencyTime,
-			"client_ip"    : clientIP,
-			"req_method"   : reqMethod,
-			"req_uri"      : reqUri,
+		config.Logger.WithFields(logrus.Fields{
+			"status_code":  statusCode,
+			"latency_time": latencyTime,
+			"client_ip":    clientIP,
+			"req_method":   reqMethod,
+			"req_uri":      reqUri,
 		}).Info()
 	}
 }

@@ -3,20 +3,20 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	v1 "notes-cloud/api/v1"
+	"notes-cloud/config"
 	"notes-cloud/middleware"
-	"notes-cloud/utils"
 )
 
 func InitRouter() {
-	gin.SetMode(utils.AppMode)
+	gin.SetMode(config.AppMode)
 	r := gin.New()
 	r.Use(middleware.Log())
 	r.Use(gin.Recovery())
 	r.Use(middleware.Cors())
-	
+
 	/*
-	后台管理路由接口
-	 */
+		后台管理路由接口
+	*/
 	//auth := r.Group("api/v1")
 	//auth.Use(middleware.JwtToken())
 	//{
@@ -38,6 +38,6 @@ func InitRouter() {
 		router.GET("article", v1.GetArt)
 	}
 
-	_ = r.Run(utils.HttpPort)
+	_ = r.Run(config.HttpPort)
 
 }

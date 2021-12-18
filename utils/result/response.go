@@ -1,4 +1,4 @@
-package errmsg
+package result
 
 const (
 	SUCCSE = 200
@@ -39,6 +39,6 @@ var codeMsg = map[int]string{
 	ERROR_CATE_NOT_EXIST: "该分类不存在",
 }
 
-func GetErrMsg(code int) string {
+func GetMsg(code int) string {
 	return codeMsg[code]
 }

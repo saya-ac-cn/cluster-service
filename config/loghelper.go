@@ -1,4 +1,4 @@
-package utils
+package config
 
 import (
 	"fmt"
@@ -12,7 +12,10 @@ import (
 
 var Logger *logrus.Logger
 
-func SetupLogger() {
+/**
+ * 日志脚手架初始化（警告：本方法只能被初始化一次）
+ */
+func setupLogger() {
 	logFilePath := "logs"
 	logFileName := "system.log"
 	// 日志文件
@@ -20,18 +23,24 @@ func SetupLogger() {
 	// 写入文件
 	src, err := os.OpenFile(fileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		fmt.Println("err", err)
+		fmt.Println("读取配置文件失败：", err)
 	}
 	// 实例化
 	logger := logrus.New()
 	// 设置输出
 	logger.Out = src
 	// 设置日志级别
-	logger.SetLevel(logrus.DebugLevel)
+	level, err := logrus.ParseLevel(LogLevel)
+	if err != nil {
+		fmt.Println("无效的日志级别参数：", err)
+		level = logrus.WarnLevel
+	}
+	logger.SetLevel(level)
+
 	// 设置 rotatelogs
 	logWriter, err := retalog.New(
 		// 分割后的文件名称
-		fileName + ".%Y%m%d.log",
+		fileName+".%Y%m%d.log",
 		// 生成软链，指向最新日志文件
 		retalog.WithLinkName(fileName),
 		// 设置最大保存时间(7天)
@@ -50,7 +59,7 @@ func SetupLogger() {
 	}
 
 	lfHook := lfshook.NewHook(writeMap, &logrus.JSONFormatter{
-		TimestampFormat:"2006-01-02 15:04:05",
+		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
 	// 新增 Hook
