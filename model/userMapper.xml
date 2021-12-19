@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mapper namespace="UserMapper">
+
+    <select id="queryOneByUser" resultType="struct">
+        SELECT
+        *
+        FROM
+        `user`
+        WHERE
+        `user` = "pandora"
+        LIMIT 1
+    </select>
+
+</mapper>

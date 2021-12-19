@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"notes-cloud/model"
-	"notes-cloud/utils/result"
+	"notes-cloud/utils/response"
 )
 
 // GetArt 查询文章列表
@@ -13,6 +13,6 @@ func GetArt(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  code,
 		"data":    data,
-		"message": result.GetMsg(code),
+		"message": response.GetMsg(code),
 	})
 }

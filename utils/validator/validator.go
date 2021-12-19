@@ -6,7 +6,7 @@ import (
 	unTrans "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	zhTrans "github.com/go-playground/validator/v10/translations/zh"
-	"notes-cloud/utils/result"
+	"notes-cloud/utils/response"
 	"reflect"
 )
 
@@ -27,8 +27,8 @@ func Validate(data interface{}) (string, int) {
 	err = validate.Struct(data)
 	if err != nil {
 		for _, v := range err.(validator.ValidationErrors) {
-			return v.Translate(trans), result.ERROR
+			return v.Translate(trans), response.ERROR
 		}
 	}
-	return "", result.SUCCSE
+	return "", response.SUCCSE
 }

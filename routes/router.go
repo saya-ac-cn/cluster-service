@@ -34,8 +34,8 @@ func InitRouter() {
 	router := r.Group("api/v1")
 	{
 		// 登录控制模块
-		//router.POST("login", v1.Login)
-		router.GET("article", v1.GetArt)
+		router.POST("login", v1.Login)
+		//router.GET("article", v1.GetArt)
 	}
 
 	_ = r.Run(config.HttpPort)

@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/sirupsen/logrus"
-	"notes-cloud/utils/result"
+	"notes-cloud/utils/response"
 )
 
 type Article struct {
@@ -26,7 +26,7 @@ func GetArt() ([]*Article, int) {
 	err := PrimaryDataSource.Select("ArticleMapper.queryAllLog", map[string]interface{}{})(&articleList)
 	if err != nil {
 		logrus.Warn("查询文章异常:", err)
-		return nil, result.ERROR
+		return nil, response.ERROR
 	}
-	return articleList, result.SUCCSE
+	return articleList, response.SUCCSE
 }

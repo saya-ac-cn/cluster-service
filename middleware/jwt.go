@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"notes-cloud/config"
-	"notes-cloud/utils/result"
+	"notes-cloud/utils/response"
 	"strings"
 )
 
@@ -76,10 +76,10 @@ func JwtToken() gin.HandlerFunc {
 		var code int
 		tokenHeader := c.Request.Header.Get("Authorization")
 		if tokenHeader == "" {
-			code = result.ERROR_TOKEN_EXIST
+			code = response.ERROR_TOKEN_EXIST
 			c.JSON(http.StatusOK, gin.H{
 				"status":  code,
-				"message": result.GetMsg(code),
+				"message": response.GetMsg(code),
 			})
 			c.Abort()
 			return
@@ -89,7 +89,7 @@ func JwtToken() gin.HandlerFunc {
 		if len(checkToken) == 0 {
 			c.JSON(http.StatusOK, gin.H{
 				"status":  code,
-				"message": result.GetMsg(code),
+				"message": response.GetMsg(code),
 			})
 			c.Abort()
 			return
@@ -98,7 +98,7 @@ func JwtToken() gin.HandlerFunc {
 		if len(checkToken) != 2 || checkToken[0] != "Bearer" {
 			c.JSON(http.StatusOK, gin.H{
 				"status":  code,
-				"message": result.GetMsg(code),
+				"message": response.GetMsg(code),
 			})
 			c.Abort()
 			return
@@ -110,7 +110,7 @@ func JwtToken() gin.HandlerFunc {
 		if err != nil {
 			if err == TokenExpired {
 				c.JSON(http.StatusOK, gin.H{
-					"status":  result.ERROR,
+					"status":  response.ERROR,
 					"message": "token授权已过期,请重新登录",
 					"data":    nil,
 				})
@@ -119,7 +119,7 @@ func JwtToken() gin.HandlerFunc {
 			}
 			// 其他错误
 			c.JSON(http.StatusOK, gin.H{
-				"status":  result.ERROR,
+				"status":  response.ERROR,
 				"message": err.Error(),
 				"data":    nil,
 			})
