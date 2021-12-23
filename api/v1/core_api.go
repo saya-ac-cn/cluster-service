@@ -4,10 +4,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"notes-cloud/middleware"
-	"notes-cloud/model"
-	"notes-cloud/utils/encrypt"
-	"notes-cloud/utils/response"
+	"saya-cloud/middleware"
+	"saya-cloud/model"
+	"saya-cloud/utils/encrypt"
+	"saya-cloud/utils/response"
 	"time"
 )
 
@@ -37,6 +37,11 @@ func Login(c *gin.Context) {
 		return
 	}
 	user.Password = ""
+	// 开启事务示例
+	tx, _ := model.PrimaryDataSource.Begin()
+	defer tx.Rollback()
+	model.RecordLog(tx, c, "100002")
+	tx.Commit()
 	setToken(c, *user)
 }
 

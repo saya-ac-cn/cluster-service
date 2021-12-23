@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"notes-cloud/config"
+	"saya-cloud/config"
 	"time"
 )
 

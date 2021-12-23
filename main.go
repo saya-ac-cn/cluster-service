@@ -1,8 +1,8 @@
 package main
 
 import (
-	"notes-cloud/model"
-	"notes-cloud/routes"
+	"saya-cloud/model"
+	"saya-cloud/routes"
 )
 
 /**

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/wenj91/gobatis"
-	"notes-cloud/config"
+	"saya-cloud/config"
 	"sync"
 )
 

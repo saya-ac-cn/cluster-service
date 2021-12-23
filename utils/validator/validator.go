@@ -6,8 +6,8 @@ import (
 	unTrans "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	zhTrans "github.com/go-playground/validator/v10/translations/zh"
-	"notes-cloud/utils/response"
 	"reflect"
+	"saya-cloud/utils/response"
 )
 
 func Validate(data interface{}) (string, int) {

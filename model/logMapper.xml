@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mapper namespace="LogMapper">
+
+    <insert id="insertLog">
+        insert into log (`user`, `type`, `ip`,`city`,`location`)
+        values (#{User}, #{Type}, #{Ip},#{City},#{Location})
+    </insert>
+</mapper>

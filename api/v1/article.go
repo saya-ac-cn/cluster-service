@@ -3,8 +3,8 @@ package v1
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"notes-cloud/model"
-	"notes-cloud/utils/response"
+	"saya-cloud/model"
+	"saya-cloud/utils/response"
 )
 
 // GetArt 查询文章列表

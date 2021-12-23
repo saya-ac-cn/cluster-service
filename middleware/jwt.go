@@ -5,8 +5,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"notes-cloud/config"
-	"notes-cloud/utils/response"
+	"saya-cloud/config"
+	"saya-cloud/utils/response"
 	"strings"
 )
 

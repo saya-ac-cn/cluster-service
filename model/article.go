@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/sirupsen/logrus"
-	"notes-cloud/utils/response"
+	"saya-cloud/utils/response"
 )
 
 type Article struct {

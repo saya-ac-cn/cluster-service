@@ -12,6 +12,9 @@ var (
 	JwtKey   string
 	LogLevel string
 
+	AmapUrl string
+	AmapKey string
+
 	ShowSql bool
 	Mappers []string
 
@@ -33,18 +36,27 @@ func loadVariable() {
 		os.Exit(-1)
 	}
 	loadServer(file.Section("server"))
+	loadAmap(file.Section("amap"))
 	loadDataBase(file.Section("database"))
 	loadPrimaryDB(file.Section("primary_database"))
 }
 
 /**
- * 加载应用相关的配置
+ * 加载高德相关的配置
  */
 func loadServer(section *ini.Section) {
 	AppMode = section.Key("AppMode").MustString("debug")
 	HttpPort = section.Key("HttpPort").MustString(":3000")
 	JwtKey = section.Key("JwtKey").MustString("89js82js72")
 	LogLevel = section.Key("LogLevel").MustString("warn")
+}
+
+/**
+ * 加载应用相关的配置
+ */
+func loadAmap(section *ini.Section) {
+	AmapUrl = section.Key("AmapUrl").MustString("https://restapi.amap.com/v5/ip")
+	AmapKey = section.Key("AmapKey").MustString("f9e1683d880fca390a916581322e5f0d")
 }
 
 /**

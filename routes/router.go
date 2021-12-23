@@ -2,9 +2,9 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	v1 "notes-cloud/api/v1"
-	"notes-cloud/config"
-	"notes-cloud/middleware"
+	v1 "saya-cloud/api/v1"
+	"saya-cloud/config"
+	"saya-cloud/middleware"
 )
 
 func InitRouter() {

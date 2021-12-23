@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	_ "github.com/wenj91/gobatis"
 	_ "log"
-	"notes-cloud/utils/response"
+	"saya-cloud/utils/response"
 )
 
 type User struct {
