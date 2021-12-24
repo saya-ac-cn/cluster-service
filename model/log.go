@@ -34,3 +34,33 @@ func RecordLog(tx *gobatis.TX, c *gin.Context, code string) {
 		logrus.Warn("记录日志异常:", err)
 	}
 }
+
+/**
+ * 批量记录日志
+ */
+func BatchRecordLog(tx *gobatis.TX, c *gin.Context, code string) {
+	location := ip.GetLocation(c.ClientIP())
+	log1 := Log{
+		User:     "Pandora",
+		Type:     code,
+		Ip:       location.Ip,
+		City:     location.Location,
+		Location: "-",
+	}
+	log2 := Log{
+		User:     "Shmily",
+		Type:     code,
+		Ip:       location.Ip,
+		City:     location.Location,
+		Location: "-",
+	}
+	logs := make([]Log, 0)
+	logs = append(logs, log1)
+	logs = append(logs, log2)
+	_, _, err := tx.Insert("LogMapper.batchInsertLog", map[string]interface{}{
+		"list": logs,
+	})
+	if err != nil {
+		logrus.Warn("记录日志异常:", err)
+	}
+}
