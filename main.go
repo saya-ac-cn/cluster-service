@@ -1,6 +1,7 @@
 package main
 
 import (
+	"saya-cloud/handle"
 	"saya-cloud/model"
 	"saya-cloud/routes"
 )
@@ -12,6 +13,8 @@ import (
 func main() {
 	// 初始化数据库
 	model.InitPrimaryDataSource()
+	// 初始化mqtt
+	handle.InitMqttClient()
 	// 引入路由组件
 	routes.InitRouter()
 }

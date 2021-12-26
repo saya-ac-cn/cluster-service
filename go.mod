@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
