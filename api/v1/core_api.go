@@ -40,7 +40,8 @@ func Login(c *gin.Context) {
 	// 开启事务示例
 	tx, _ := model.PrimaryDataSource.Begin()
 	defer tx.Rollback()
-	model.RecordLog(tx, c, "100002")
+	//model.RecordLog(tx, c, "100002")
+	model.BatchRecordLog(tx, c, "100002")
 	tx.Commit()
 	setToken(c, *user)
 }
