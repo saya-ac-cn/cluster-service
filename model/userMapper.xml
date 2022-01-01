@@ -7,8 +7,19 @@
         FROM
         `user`
         WHERE
-        `user` = "pandora"
+        `user` = #{User}
         LIMIT 1
     </select>
+
+    <update id="updateUserInfo">
+        update `user`
+        <set>
+            <if test="Password != nil and Password != ''">
+                password = #{Password},
+            </if>
+            update_time = now()
+        </set>
+        where `user` = #{User}
+    </update>
 
 </mapper>

@@ -40,10 +40,42 @@ func Login(c *gin.Context) {
 	// 开启事务示例
 	tx, _ := model.PrimaryDataSource.Begin()
 	defer tx.Rollback()
-	//model.RecordLog(tx, c, "100002")
-	model.BatchRecordLog(tx, c, "100002")
+	model.RecordLog(tx, c, "100001")
+	//model.BatchRecordLog(tx, c, "100002")
 	tx.Commit()
 	setToken(c, *user)
+}
+
+func UpdatePassword(c *gin.Context) {
+	var formData model.User
+	_ = c.ShouldBindJSON(&formData)
+	if "" == formData.User || "" == formData.Password {
+		// 用户不存在
+		c.JSON(http.StatusOK, response.GenerateErrorResponseByCode(response.NOT_PARAMETER))
+		return
+	}
+	user, code := model.GetUserByAccount(formData.User)
+	if code != response.SUCCSE {
+		// 系统异常
+		c.JSON(http.StatusInternalServerError, response.GenerateErrorResponseByCode(code))
+		return
+	}
+	if user == nil {
+		// 用户不存在
+		c.JSON(http.StatusOK, response.GenerateErrorResponseByCode(response.ERROR_USER_NOT_EXIST))
+		return
+	}
+	formData.Password = encrypt.HashAndSalt([]byte(formData.Password))
+	tx, _ := model.PrimaryDataSource.Begin()
+	defer tx.Rollback()
+	result := model.UpdateUserInfo(tx, formData)
+	model.RecordLog(tx, c, "100002")
+	tx.Commit()
+	if response.SUCCSE != result {
+		c.JSON(http.StatusInternalServerError, response.GenerateErrorResponseByCode(result))
+	}
+	c.JSON(http.StatusOK, response.GenerateErrorResponseByCode(result))
+	return
 }
 
 // token生成函数

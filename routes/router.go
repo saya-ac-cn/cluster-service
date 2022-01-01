@@ -21,7 +21,7 @@ func InitRouter() {
 	auth.Use(middleware.JwtToken())
 	{
 		auth.GET("admin/article", v1.GetArt)
-		//auth.POST("article/add", v1.AddArticle)
+		auth.PUT("user/password", v1.UpdatePassword)
 		//auth.PUT("article/:id", v1.EditArt)
 		//auth.DELETE("article/:id", v1.DeleteArt)
 	}

@@ -1,5 +1,2 @@
-{"animal":"walrus","level":"error","msg":"服务正在启动","time":"2021-12-19 00:06:21"}
-{"client_ip":"127.0.0.1","latency_time":42541106,"level":"info","msg":"","req_method":"GET","req_uri":"/api/v1/article","status_code":200,"time":"2021-12-19 00:36:06"}
-time="2021-12-19T00:36:06+08:00" level=info client_ip=127.0.0.1 latency_time=42.541106ms req_method=GET req_uri=/api/v1/article status_code=200
-{"client_ip":"127.0.0.1","latency_time":39781010,"level":"info","msg":"","req_method":"GET","req_uri":"/api/v1/article","status_code":200,"time":"2021-12-19 00:46:36"}
-time="2021-12-19T00:46:36+08:00" level=info client_ip=127.0.0.1 latency_time=39.78101ms req_method=GET req_uri=/api/v1/article status_code=200
+{"client_ip":"127.0.0.1","latency_time":52624209,"level":"info","msg":"","req_method":"POST","req_uri":"/api/v1/login","status_code":200,"time":"2021-12-24 11:21:18"}
+{"client_ip":"127.0.0.1","latency_time":459488333,"level":"info","msg":"","req_method":"POST","req_uri":"/api/v1/login","status_code":200,"time":"2021-12-24 11:22:26"}
