@@ -61,6 +61,7 @@ func loadAmap(section *ini.Section) {
 
 /**
  * 加载数据库通用配置
+Debugger disconnected unexpectedly
  */
 func loadDataBase(section *ini.Section) {
 	ShowSql = section.Key("ShowSql").MustBool(false)

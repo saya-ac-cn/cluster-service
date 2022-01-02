@@ -15,7 +15,7 @@
         update `user`
         <set>
             <if test="Password != nil and Password != ''">
-                password = #{Password},
+                password = #{Password}
             </if>
             update_time = now()
         </set>

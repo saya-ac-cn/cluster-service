@@ -7,6 +7,7 @@ import (
 	"saya-cloud/middleware"
 	"saya-cloud/model"
 	"saya-cloud/utils/encrypt"
+	"saya-cloud/utils/record"
 	"saya-cloud/utils/response"
 	"time"
 )
@@ -40,7 +41,7 @@ func Login(c *gin.Context) {
 	// 开启事务示例
 	tx, _ := model.PrimaryDataSource.Begin()
 	defer tx.Rollback()
-	model.RecordLog(tx, c, "100001")
+	model.RecordLog(tx, c, record.USER_LOGIN)
 	//model.BatchRecordLog(tx, c, "100002")
 	tx.Commit()
 	setToken(c, *user)
@@ -50,7 +51,7 @@ func UpdatePassword(c *gin.Context) {
 	var formData model.User
 	_ = c.ShouldBindJSON(&formData)
 	if "" == formData.User || "" == formData.Password {
-		// 用户不存在
+		// 缺少参数
 		c.JSON(http.StatusOK, response.GenerateErrorResponseByCode(response.NOT_PARAMETER))
 		return
 	}
@@ -69,10 +70,11 @@ func UpdatePassword(c *gin.Context) {
 	tx, _ := model.PrimaryDataSource.Begin()
 	defer tx.Rollback()
 	result := model.UpdateUserInfo(tx, formData)
-	model.RecordLog(tx, c, "100002")
+	model.RecordLog(tx, c, record.USER_SET_PASSWORD)
 	tx.Commit()
 	if response.SUCCSE != result {
 		c.JSON(http.StatusInternalServerError, response.GenerateErrorResponseByCode(result))
+		return
 	}
 	c.JSON(http.StatusOK, response.GenerateErrorResponseByCode(result))
 	return
