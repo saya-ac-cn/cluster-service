@@ -33,7 +33,7 @@ func GetUserByAccount(account string) (*User, int) {
 func UpdateUserInfo(tx *gobatis.TX, user User) int {
 	_, err := tx.Update("UserMapper.updateUserInfo", &user)
 	if err != nil {
-		logrus.Warn("查询用户异常:", err)
+		logrus.Warn("修改用户异常:", err)
 		return response.ERROR
 	}
 	return response.SUCCSE

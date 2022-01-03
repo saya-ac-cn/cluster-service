@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mapper namespace="ProductMapper">
+
+    <select id="queryProduct" resultType="structs">
+        select
+            `id`,
+            `name`,
+            `status`
+        from
+        `iot_product`
+        <where>
+            <if test="Id != nil and Id != 0">
+                `id` = #{Id}
+            </if>
+            <if test="Name != nil and Name != ''">
+                and `name` = #{Name}
+            </if>
+            <if test="Status != nil and Status != 0">
+                and `status` = #{Status}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insertProduct">
+        insert into iot_product (`name`, `status`)
+        values (#{Name},#{Status})
+    </insert>
+
+    <update id="updateProduct">
+        update `iot_product`
+        <set>
+            <if test="Name != nil and Name != ''">
+                `name` = #{Name}
+            </if>
+            <if test="Status != nil and Status != 0">
+                `status` = #{Status}
+            </if>
+        </set>
+        where `id` = #{Id}
+    </update>
+</mapper>

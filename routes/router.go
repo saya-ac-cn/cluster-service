@@ -20,9 +20,11 @@ func InitRouter() {
 	auth := r.Group("api/v1")
 	auth.Use(middleware.JwtToken())
 	{
-		auth.GET("admin/article", v1.GetArt)
 		auth.PUT("user/password", v1.UpdatePassword)
-		//auth.PUT("article/:id", v1.EditArt)
+		auth.GET("product", v1.GetProductList)
+		auth.POST("product", v1.AddProduct)
+		auth.PUT("product", v1.EditProduct)
+		auth.DELETE("product/:id", v1.RemoveProduct)
 		//auth.DELETE("article/:id", v1.DeleteArt)
 	}
 

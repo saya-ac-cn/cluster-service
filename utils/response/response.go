@@ -4,6 +4,7 @@ const (
 	SUCCSE        = 200
 	ERROR         = 500
 	NOT_PARAMETER = 1001
+	DATA_REPEAT   = 1002
 
 	// code= 1000... 用户模块的错误
 	ERROR_USERNAME_USED    = 2001
@@ -20,6 +21,7 @@ var codeMsg = map[int]string{
 	SUCCSE:                 "OK",
 	ERROR:                  "FAIL",
 	NOT_PARAMETER:          "缺少参数",
+	DATA_REPEAT:            "数据重复",
 	ERROR_USERNAME_USED:    "用户名已存在！",
 	ERROR_PASSWORD_WRONG:   "密码错误",
 	ERROR_USER_NOT_EXIST:   "用户不存在",
