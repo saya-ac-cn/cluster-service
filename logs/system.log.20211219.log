@@ -1,2 +1,0 @@
-{"client_ip":"127.0.0.1","latency_time":52624209,"level":"info","msg":"","req_method":"POST","req_uri":"/api/v1/login","status_code":200,"time":"2021-12-24 11:21:18"}
-{"client_ip":"127.0.0.1","latency_time":459488333,"level":"info","msg":"","req_method":"POST","req_uri":"/api/v1/login","status_code":200,"time":"2021-12-24 11:22:26"}
