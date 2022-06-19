@@ -5,7 +5,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"saya-cloud/config"
+	"saya-cloud/constant"
 	"saya-cloud/utils/response"
 	"strings"
 )
@@ -16,7 +16,7 @@ type JWT struct {
 
 func NewJWT() *JWT {
 	return &JWT{
-		[]byte(config.JwtKey),
+		[]byte(constant.ServerConfigData.JwtKey),
 	}
 }
 

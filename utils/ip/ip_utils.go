@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"saya-cloud/config"
+	"saya-cloud/constant"
 	"strconv"
 	"strings"
 )
@@ -106,9 +106,9 @@ func GetLocation(ip string) *IpCityInfo {
 		return &result
 	}
 	var url bytes.Buffer
-	url.WriteString(config.AmapUrl)
+	url.WriteString(constant.AmapConfigData.Url)
 	url.WriteString("?key=")
-	url.WriteString(config.AmapKey)
+	url.WriteString(constant.AmapConfigData.Key)
 	url.WriteString("&ip=")
 	url.WriteString(ip)
 	url.WriteString("&type=")

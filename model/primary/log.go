@@ -1,4 +1,4 @@
-package model
+package primary
 
 import (
 	"github.com/gin-gonic/gin"

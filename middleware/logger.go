@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"saya-cloud/config"
+	"saya-cloud/constant"
 	"time"
 )
 
@@ -27,7 +27,7 @@ func Log() gin.HandlerFunc {
 		// 请求IP
 		clientIP := c.ClientIP()
 		// 日志格式
-		config.Logger.WithFields(logrus.Fields{
+		constant.Logger.WithFields(logrus.Fields{
 			"status_code":  statusCode,
 			"latency_time": latencyTime,
 			"client_ip":    clientIP,

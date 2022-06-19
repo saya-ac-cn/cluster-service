@@ -1,8 +1,9 @@
-package model
+package primary
 
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/wenj91/gobatis"
+	"saya-cloud/model"
 	"saya-cloud/utils/response"
 )
 
@@ -18,7 +19,7 @@ type Product struct {
 
 func QueryProduct(param Product) ([]*Product, int) {
 	products := make([]*Product, 0)
-	err := PrimaryDataSource.Select("ProductMapper.queryProduct", param)(&products)
+	err := model.PrimaryDataSource.Select("ProductMapper.queryProduct", param)(&products)
 	if err != nil {
 		logrus.Warn("查询产品异常:", err)
 		return nil, response.ERROR

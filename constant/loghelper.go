@@ -1,4 +1,4 @@
-package config
+package constant
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ func setupLogger() {
 	// 设置输出
 	logger.Out = src
 	// 设置日志级别
-	level, err := logrus.ParseLevel(LogLevel)
+	level, err := logrus.ParseLevel(ServerConfigData.LogLevel)
 	if err != nil {
 		fmt.Println("无效的日志级别参数：", err)
 		level = logrus.WarnLevel

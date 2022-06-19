@@ -1,10 +1,11 @@
-package model
+package primary
 
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/wenj91/gobatis"
 	_ "github.com/wenj91/gobatis"
 	_ "log"
+	"saya-cloud/model"
 	"saya-cloud/utils/response"
 )
 
@@ -21,7 +22,7 @@ func GetUserByAccount(account string) (*User, int) {
 	var user *User
 	// 根据传入实体查询对象
 	param := User{User: account}
-	err := PrimaryDataSource.Select("UserMapper.queryOneByUser", param)(&user)
+	err := model.PrimaryDataSource.Select("UserMapper.queryOneByUser", param)(&user)
 	if err != nil {
 		logrus.Warn("查询用户异常:", err)
 		return nil, response.ERROR

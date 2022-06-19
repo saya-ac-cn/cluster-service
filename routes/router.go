@@ -3,12 +3,12 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	v1 "saya-cloud/api/v1"
-	"saya-cloud/config"
+	"saya-cloud/constant"
 	"saya-cloud/middleware"
 )
 
 func InitRouter() {
-	gin.SetMode(config.AppMode)
+	gin.SetMode(constant.ServerConfigData.Mode)
 	r := gin.New()
 	r.Use(middleware.Log())
 	r.Use(gin.Recovery())
@@ -38,6 +38,6 @@ func InitRouter() {
 		//router.GET("article", v1.GetArt)
 	}
 
-	_ = r.Run(config.HttpPort)
+	_ = r.Run(constant.ServerConfigData.Port)
 
 }
