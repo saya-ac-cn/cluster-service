@@ -9,7 +9,7 @@ cache_type: "mem"
 #redis地址(cache_type为“redis”时有效)
 redis_url: "redis://127.0.0.1:6379"
 #数据库地址
-database_url: "mysql://saya:Lnk_742442849@1.15.81.148:3306/test"
+database_url: "mysql://-/test"
 #逻辑删除-字段
 logic_column: "del"
 #逻辑删除-未删除标志
