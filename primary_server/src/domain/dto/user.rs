@@ -1,4 +1,4 @@
-use crate::domain::table::{LoginCheck, SysUser, SysUserRole};
+use crate::domain::table::{LoginCheckEnum, SysUser, SysUserRole};
 use crate::util::password_encoder::PasswordEncoder;
 use rbatis::object_id::ObjectId;
 use rbatis::rbdc::datetime::FastDateTime;
@@ -10,7 +10,7 @@ pub struct UserAddDTO {
     pub account: Option<String>,
     pub password: Option<String>,
     pub name: Option<String>,
-    pub login_check: Option<LoginCheck>,
+    pub login_check: Option<LoginCheckEnum>,
     pub role_id: Option<String>,
 }
 
@@ -36,7 +36,7 @@ pub struct UserEditDTO {
     pub password: Option<String>,
     pub name: Option<String>,
     pub state: Option<i32>,
-    pub login_check: Option<LoginCheck>,
+    pub login_check: Option<LoginCheckEnum>,
     pub role_id: Option<String>,
 }
 

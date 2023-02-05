@@ -5,7 +5,7 @@ use rbatis::rbdc::types::datetime::FastDateTime;
 use rbatis::sql::page::{Page, PageRequest};
 
 use crate::domain::dto::{IdDTO, SignInDTO, UserAddDTO, UserEditDTO, UserPageDTO, UserRoleAddDTO};
-use crate::domain::table::{LoginCheck, SysUser};
+use crate::domain::table::{LoginCheckEnum, SysUser};
 use crate::domain::vo::user::SysUserVO;
 use crate::domain::vo::{JWTToken, SignInVO, SysResVO};
 use crate::pool;
@@ -15,7 +15,7 @@ use std::time::Duration;
 
 use crate::util::options::OptionStringRefUnwrapOrDefault;
 
-const REDIS_KEY_RETRY: &'static str = "login:login_retry:";
+const LOGIN_RETRY_CACHE_PREFIX_KEY: &'static str = "login:retry:";
 
 ///Background User Service
 pub struct SysUserService {}
@@ -118,20 +118,17 @@ impl SysUserService {
             return Err(Error::from("账户被禁用!"));
         }
         let mut error = None;
-        match user.login_check.as_ref().unwrap_or(&LoginCheck::PasswordCheck) {
-            LoginCheck::NoCheck => {
-                //无校验登录，适合Debug用
-            }
-            LoginCheck::PasswordCheck => {
+        match LoginCheckEnum::from(arg.check_method.as_str()) {
+            LoginCheckEnum::Password => {
                 // check pwd
                 if !PasswordEncoder::verify(user.password.as_ref().ok_or_else(|| Error::from("错误的用户数据，密码为空!"))?, &arg.password) {
                     error = Some(Error::from("密码不正确!"));
                 }
             }
-            LoginCheck::PasswordImgCodeCheck => {
+            LoginCheckEnum::Image => {
                 //check img code
                 let cache_code = CONTEXT.cache_service.get_string(&format!("captch:account_{}", &arg.account)).await?;
-                if cache_code.eq(&arg.vcode) {
+                if cache_code.eq(&arg.code) {
                     error = Some(Error::from("验证码不正确!"))
                 }
                 // check pwd
@@ -139,10 +136,10 @@ impl SysUserService {
                     error = Some(Error::from("密码不正确!"));
                 }
             }
-            LoginCheck::PhoneCodeCheck => {
+            LoginCheckEnum::Message => {
                 //短信验证码登录
                 let sms_code = CONTEXT.cache_service.get_string(&format!("{}{}", CONTEXT.config.sms_cache_send_key_prefix, &arg.account)).await?;
-                if sms_code.eq(&arg.vcode) {
+                if sms_code.eq(&arg.code) {
                     error = Some(Error::from("验证码不正确!"));
                 }
             }
@@ -160,7 +157,7 @@ impl SysUserService {
     /// 检查此用户之前是否达到阈值锁定
     pub async fn is_need_wait_login_ex(&self, account: &String) -> Result<()> {
         if CONTEXT.config.login_fail_retry > 0 {
-            let key: String = format!("{}{}", REDIS_KEY_RETRY, account);
+            let key: String = format!("{}{}", LOGIN_RETRY_CACHE_PREFIX_KEY, account);
             let num: Option<u64> = CONTEXT.cache_service.get_json(key.clone().as_str()).await?;
             let already_lock_num: u64 = num.unwrap_or(0);
             if already_lock_num >= CONTEXT.config.login_fail_retry {
@@ -179,7 +176,7 @@ impl SysUserService {
     /// 记录用户密码输入错误次数
     pub async fn add_retry_login_limit_num(&self, account: &String) -> Result<()> {
         if CONTEXT.config.login_fail_retry > 0 {
-            let key: String = format!("{}{}", REDIS_KEY_RETRY, account);
+            let key: String = format!("{}{}", LOGIN_RETRY_CACHE_PREFIX_KEY, account);
             let num: Option<u64> = CONTEXT.cache_service.get_json(key.clone().as_str()).await?;
             let mut num = num.unwrap_or(0);
             if num > CONTEXT.config.login_fail_retry {
@@ -204,19 +201,17 @@ impl SysUserService {
         //去除密码，增加安全性
         let mut user = user.clone();
         user.password = None;
-        let user_id = user
-            .id
-            .clone()
-            .ok_or_else(|| Error::from("错误的用户数据，id为空!"))?;
+        let user_id = user.id.clone().ok_or_else(|| Error::from("错误的用户数据，id为空!"))?;
         let mut sign_vo = SignInVO {
             user: Some(user.clone().into()),
             permissions: vec![],
             access_token: String::new(),
             role: None,
         };
+        // 临时注释权限
         //提前查找所有权限，避免在各个函数方法中重复查找
-        let all_res = CONTEXT.sys_res_service.finds_all_map().await?;
-        sign_vo.permissions = self.load_level_permission(&user_id, &all_res).await?;
+        // let all_res = CONTEXT.sys_res_service.finds_all_map().await?;
+        // sign_vo.permissions = self.load_level_permission(&user_id, &all_res).await?;
         let jwt_token = JWTToken {
             id: user.id.as_deref().unwrap_or_default().to_string(),
             account: user.account.unwrap_or_default(),
@@ -224,16 +219,18 @@ impl SysUserService {
             role_ids: vec![],
             exp: FastDateTime::now().set_micro(0).unix_timestamp_millis() as usize,
         };
+        // 构造token
         sign_vo.access_token = jwt_token.create_token(&CONTEXT.config.jwt_secret)?;
-        sign_vo.role = CONTEXT
-            .sys_user_role_service
-            .find_user_role(
-                &user.id.unwrap_or_else(|| {
-                    return String::new();
-                }),
-                &all_res,
-            )
-            .await?;
+        // 临时注释权限
+        // sign_vo.role = CONTEXT
+        //     .sys_user_role_service
+        //     .find_user_role(
+        //         &user.id.unwrap_or_else(|| {
+        //             return String::new();
+        //         }),
+        //         &all_res,
+        //     )
+        //     .await?;
         return Ok(sign_vo);
     }
 

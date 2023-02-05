@@ -1,4 +1,4 @@
-use crate::domain::table::{LoginCheck, SysUser};
+use crate::domain::table::{LoginCheckEnum, SysUser};
 use crate::domain::vo::SysRoleVO;
 use rbatis::rbdc::datetime::FastDateTime;
 use serde::{Deserialize, Serialize};
@@ -9,7 +9,7 @@ pub struct SysUserVO {
     pub account: Option<String>,
     pub password: Option<String>,
     pub name: Option<String>,
-    pub login_check: Option<LoginCheck>,
+    pub login_check: Option<LoginCheckEnum>,
     pub state: Option<i32>,
     pub del: Option<i32>,
     pub create_date: Option<FastDateTime>,
