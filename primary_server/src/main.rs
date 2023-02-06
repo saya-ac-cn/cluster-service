@@ -1,6 +1,5 @@
 use primary_server::controller::{
-    img_controller, sys_dict_controller, sys_res_controller,
-    sys_role_controller, sys_user_controller,
+    img_controller, sys_dict_controller, sys_user_controller,
 };
 use primary_server::middleware::auth_actix::Auth;
 use primary_server::service::CONTEXT;

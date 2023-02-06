@@ -204,33 +204,22 @@ impl SysUserService {
         let user_id = user.id.clone().ok_or_else(|| Error::from("错误的用户数据，id为空!"))?;
         let mut sign_vo = SignInVO {
             user: Some(user.clone().into()),
-            permissions: vec![],
             access_token: String::new(),
-            role: None,
         };
         // 临时注释权限
         //提前查找所有权限，避免在各个函数方法中重复查找
         // let all_res = CONTEXT.sys_res_service.finds_all_map().await?;
         // sign_vo.permissions = self.load_level_permission(&user_id, &all_res).await?;
         let jwt_token = JWTToken {
-            id: user.id.as_deref().unwrap_or_default().to_string(),
-            account: user.account.unwrap_or_default(),
-            permissions: sign_vo.permissions.clone(),
-            role_ids: vec![],
-            exp: FastDateTime::now().set_micro(0).unix_timestamp_millis() as usize,
+            account: "189".to_string(),
+            name: "1".to_string(),
+            organize: 1,
+            ip:String::from("127.0.0.1"),
+            city:String::from("局域网"),
+            exp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize,
         };
         // 构造token
         sign_vo.access_token = jwt_token.create_token(&CONTEXT.config.jwt_secret)?;
-        // 临时注释权限
-        // sign_vo.role = CONTEXT
-        //     .sys_user_role_service
-        //     .find_user_role(
-        //         &user.id.unwrap_or_else(|| {
-        //             return String::new();
-        //         }),
-        //         &all_res,
-        //     )
-        //     .await?;
         return Ok(sign_vo);
     }
 
@@ -274,16 +263,4 @@ impl SysUserService {
     //     CONTEXT.sys_user_role_service.remove_by_user_id(id).await?;
     //     return Ok(r.rows_affected);
     // }
-
-    ///Find user-authority hierarchy permissions
-    pub async fn load_level_permission(
-        &self,
-        user_id: &str,
-        all_res: &BTreeMap<String, SysResVO>,
-    ) -> Result<Vec<String>> {
-        return CONTEXT
-            .sys_role_service
-            .find_user_permission(user_id, all_res)
-            .await;
-    }
 }

@@ -1,20 +1,22 @@
 use crate::error::Error;
 use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation, Algorithm};
 use serde::{Deserialize, Serialize};
 
 /// JWT authentication Token structure
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct JWTToken {
-    //账号id
-    pub id: String,
-    //账号
+    // 账号
     pub account: String,
-    //权限集合
-    pub permissions: Vec<String>,
-    //角色id集合
-    pub role_ids: Vec<String>,
-    //过期时间
+    // 姓名
+    pub name: String,
+    // 组织
+    pub organize: u64,
+    // 登录ip
+    pub ip: String,
+    // 登录城市
+    pub city: String,
+    // 过期时间
     pub exp: usize,
 }
 
@@ -34,7 +36,9 @@ impl JWTToken {
     /// verify token invalid
     /// secret: your secret string
     pub fn verify(secret: &str, token: &str) -> Result<JWTToken, Error> {
-        let validation = Validation::default();
+        let mut validation = Validation::new(Algorithm::HS256);
+        // 过期时间30分钟(默认是60s)，单位秒
+        validation.leeway = 60 * 30;
         return match decode::<JWTToken>(
             &token,
             &DecodingKey::from_secret(secret.as_ref()),
@@ -60,11 +64,12 @@ mod test {
     #[test]
     fn test_jwt() {
         let j = JWTToken {
-            id: "1".to_string(),
             account: "189".to_string(),
-            permissions: vec![],
-            role_ids: vec![],
-            exp: FastDateTime::now().set_micro(0).unix_timestamp_millis() as usize,
+            name: "1".to_string(),
+            organize: 1,
+            ip:String::from("127.0.0.1"),
+            city:String::from("局域网"),
+            exp: DateTimeNative::now().timestamp() as usize,
         };
         sleep(Duration::from_secs(5));
         let token = j.create_token("ssss").unwrap();

@@ -1,14 +1,7 @@
 mod cache_service;
 mod mem_service;
 mod redis_service;
-mod sys_config_service;
 mod sys_dict_service;
-mod sys_res_service;
-mod sys_role_res_service;
-mod sys_role_service;
-mod sys_sms_service;
-mod sys_trash_service;
-mod sys_user_role_service;
 mod sys_user_service;
 
 pub use crate::config::config::ApplicationConfig;
@@ -18,14 +11,7 @@ use once_cell::sync::Lazy;
 use rbatis::rbatis::Rbatis;
 use rbdc_mysql::driver::MysqlDriver;
 pub use redis_service::*;
-pub use sys_config_service::*;
 pub use sys_dict_service::*;
-pub use sys_res_service::*;
-pub use sys_role_res_service::*;
-pub use sys_role_service::*;
-pub use sys_sms_service::*;
-pub use sys_trash_service::*;
-pub use sys_user_role_service::*;
 pub use sys_user_service::*;
 
 /// CONTEXT is all of the service struct
@@ -42,13 +28,8 @@ pub struct ServiceContext {
     pub config: ApplicationConfig,
     pub rb: Rbatis,
     pub cache_service: CacheService,
-    pub sys_res_service: SysResService,
     pub sys_user_service: SysUserService,
-    pub sys_role_service: SysRoleService,
-    pub sys_role_res_service: SysRoleResService,
-    pub sys_user_role_service: SysUserRoleService,
-    pub sys_dict_service: SysDictService,
-    pub sys_trash_service: SysTrashService,
+    pub sys_dict_service: SysDictService
 }
 
 impl ServiceContext {
@@ -79,13 +60,8 @@ impl Default for ServiceContext {
         ServiceContext {
             rb: crate::domain::init_rbatis(&config),
             cache_service: CacheService::new(&config).unwrap(),
-            sys_res_service: SysResService {},
             sys_user_service: SysUserService {},
-            sys_role_service: SysRoleService {},
-            sys_role_res_service: SysRoleResService {},
-            sys_user_role_service: SysUserRoleService {},
             sys_dict_service: SysDictService {},
-            sys_trash_service: SysTrashService {},
             config,
         }
     }

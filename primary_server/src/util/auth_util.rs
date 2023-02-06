@@ -30,22 +30,22 @@ pub async fn checked_token(token: &str, path: &str) -> Result<JWTToken, crate::e
 
 /// 相关角色权限的校验
 pub async fn check_auth(token: &JWTToken, path: &str) -> Result<(), crate::error::Error> {
-    let sys_res = CONTEXT.sys_res_service.finds_all().await?;
+    //let sys_res = CONTEXT.sys_res_service.finds_all().await?;
     //权限校验
-    for token_permission in &token.permissions {
-        for x in &sys_res {
-            match &x.permission {
-                Some(permission) => match &x.path {
-                    None => {}
-                    Some(x_path) => {
-                        if permission.eq(token_permission) && path.contains(x_path) {
-                            return Ok(());
-                        }
-                    }
-                },
-                _ => {}
-            }
-        }
-    }
+    // for token_permission in &token.permissions {
+    //     for x in &sys_res {
+    //         match &x.permission {
+    //             Some(permission) => match &x.path {
+    //                 None => {}
+    //                 Some(x_path) => {
+    //                     if permission.eq(token_permission) && path.contains(x_path) {
+    //                         return Ok(());
+    //                     }
+    //                 }
+    //             },
+    //             _ => {}
+    //         }
+    //     }
+    // }
     return Err(crate::error::Error::from("无权限访问!"));
 }
