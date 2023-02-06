@@ -2,7 +2,7 @@ use crate::domain::dto::CatpchaDTO;
 use crate::domain::vo::RespVO;
 use crate::error::Error;
 use crate::service::CONTEXT;
-use crate::util::string::IsEmptyString;
+use crate::util::string_util::IsEmptyString;
 use actix_web::{web, HttpResponse, Responder};
 use captcha::filters::{Dots, Noise, Wave};
 use captcha::Captcha;

@@ -1,7 +1,6 @@
 mod cache_service;
 mod mem_service;
 mod redis_service;
-mod sys_auth_service;
 mod sys_config_service;
 mod sys_dict_service;
 mod sys_res_service;
@@ -19,7 +18,6 @@ use once_cell::sync::Lazy;
 use rbatis::rbatis::Rbatis;
 use rbdc_mysql::driver::MysqlDriver;
 pub use redis_service::*;
-pub use sys_auth_service::*;
 pub use sys_config_service::*;
 pub use sys_dict_service::*;
 pub use sys_res_service::*;
@@ -50,7 +48,6 @@ pub struct ServiceContext {
     pub sys_role_res_service: SysRoleResService,
     pub sys_user_role_service: SysUserRoleService,
     pub sys_dict_service: SysDictService,
-    pub sys_auth_service: SysAuthService,
     pub sys_trash_service: SysTrashService,
 }
 
@@ -88,7 +85,6 @@ impl Default for ServiceContext {
             sys_role_res_service: SysRoleResService {},
             sys_user_role_service: SysUserRoleService {},
             sys_dict_service: SysDictService {},
-            sys_auth_service: SysAuthService {},
             sys_trash_service: SysTrashService {},
             config,
         }

@@ -16,7 +16,7 @@ impl PasswordEncoder {
 
 #[cfg(test)]
 mod test {
-    use crate::util::password_encoder::PasswordEncoder;
+    use crate::util::password_encoder_util::PasswordEncoder;
 
     #[test]
     fn test_encode() {

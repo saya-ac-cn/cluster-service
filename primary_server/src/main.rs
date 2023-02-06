@@ -1,5 +1,5 @@
 use primary_server::controller::{
-    img_controller, sys_auth_controller, sys_dict_controller, sys_res_controller,
+    img_controller, sys_dict_controller, sys_res_controller,
     sys_role_controller, sys_user_controller,
 };
 use primary_server::middleware::auth_actix::Auth;
@@ -111,10 +111,6 @@ async fn main() -> std::io::Result<()> {
             //     "/admin/sys_dict_page",
             //     web::post().to(sys_dict_controller::page),
             // )
-            .route(
-                "/admin/auth/check",
-                web::post().to(sys_auth_controller::check),
-            )
     })
     .bind(&CONTEXT.config.server_url)?
     .run()

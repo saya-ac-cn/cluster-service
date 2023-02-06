@@ -1,5 +1,5 @@
 use crate::domain::table::{LoginCheckEnum, SysUser, SysUserRole};
-use crate::util::password_encoder::PasswordEncoder;
+use crate::util::password_encoder_util::PasswordEncoder;
 use rbatis::object_id::ObjectId;
 use rbatis::rbdc::datetime::FastDateTime;
 use rbatis::sql::PageRequest;

@@ -1,5 +1,5 @@
 use crate::domain::vo::RespVO;
-use crate::middleware::auth::{check_auth, checked_token, is_white_list_api};
+use crate::util::auth_util::{check_auth, checked_token, is_white_list_api};
 use crate::service::CONTEXT;
 use actix_http::body::BoxBody;
 use actix_web::error::ErrorUnauthorized;

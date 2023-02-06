@@ -1,8 +1,7 @@
 use crate::domain::vo::JWTToken;
 use crate::service::CONTEXT;
-pub struct Auth;
 
-///Whether the interface is in the whitelist
+/// 判断是否在白名单中
 pub fn is_white_list_api(path: &str) -> bool {
     if path.eq("/") {
         return true;
@@ -15,7 +14,7 @@ pub fn is_white_list_api(path: &str) -> bool {
     return false;
 }
 
-///Check whether the token is valid and has not expired
+/// 校验token是否合法
 pub async fn checked_token(token: &str, path: &str) -> Result<JWTToken, crate::error::Error> {
     //check token alive
     let token = JWTToken::verify(&CONTEXT.config.jwt_secret, token);
@@ -29,7 +28,7 @@ pub async fn checked_token(token: &str, path: &str) -> Result<JWTToken, crate::e
     }
 }
 
-///Permission to check
+/// 相关角色权限的校验
 pub async fn check_auth(token: &JWTToken, path: &str) -> Result<(), crate::error::Error> {
     let sys_res = CONTEXT.sys_res_service.finds_all().await?;
     //权限校验
