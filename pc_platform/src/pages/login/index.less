@@ -1,0 +1,61 @@
+.login-page{
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  /* 加载背景图 */
+  /* 背景图垂直、水平均居中 */
+  background-position: center center;
+  /* 背景图不平铺 */
+  background-repeat: no-repeat;
+  /* 当内容高度大于图片高度时，背景图像的位置相对于viewport固定 */
+  background-attachment: fixed;
+  /* 让背景图基于容器大小伸缩 */
+  background-size: cover;
+  background-attachment: fixed;
+  .window-title{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    .light{
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 2px;
+      cursor: pointer;
+      font-size: 10px;
+      text-align: center;
+      color: #fff;
+    }
+    .light:hover {
+      opacity: 0.8;
+    }
+    .yellow {
+      background-color: #ffbf2b;
+      margin-right: 8px;
+    }
+    .red {
+      background-color: #fd6458;
+      margin-right: 8px;
+    }
+    .green {
+      background-color: #24cc3d;
+    }
+  }
+  form{
+    margin-top: 8em;
+    width: 30em;
+    .title {
+      margin: 0em auto 2em auto;
+      text-align: center;
+      color: #505458;
+      font-size: 1.3em;
+    }
+  }
+}
