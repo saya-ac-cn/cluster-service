@@ -1,6 +1,5 @@
 import {defineConfig, loadEnv} from "vite";
 import react from "@vitejs/plugin-react";
-import vitePluginImp from 'vite-plugin-imp'
 import path from 'path'
 
 // https://vitejs.dev/config/
@@ -8,31 +7,8 @@ export default ({mode}) => {
   const env = loadEnv(mode,process.cwd())
   return defineConfig({
     plugins: [
-      react(),
-      vitePluginImp({
-        optimize: true,
-        libList: [
-          {
-            libName: 'antd',
-            libDirectory: 'es',
-            // style: (name) => `antd/es/${name}/style`,
-            style: (name) => {
-              return true;//`antd/es/${name}/style`
-            }
-          },
-        ],
-      }),
+      react()
     ],
-    css: {
-      preprocessorOptions: {
-        less: {
-          modifyVars: {
-            '@primary-color': '#b59afe',
-          },
-          javascriptEnabled: true
-        }
-      }
-    },
 
     resolve:{
       alias:{

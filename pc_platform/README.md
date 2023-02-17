@@ -60,7 +60,7 @@ npm run tauri dev
 yarn tauri info
 ```
 
-解决错误
+# 解决错误
 ```text
 
 antd报错Instance created by `useForm` isnot connected to any Form element. Forget to pass `form` prop
@@ -69,6 +69,38 @@ antd报错Instance created by `useForm` isnot connected to any Form element. For
 例如：我在Form外层包裹了Modal（Drawer同理）组件，在调用form的实例时，Modal内部的组件并未渲染，才导致了如此错误。
 
 强制Modal渲染 通过antd提供的forceRender属性即可
+
+```
+# 关于更换图标
+
+1、准备一个尺寸为1240 x 1240 的 PNG图片或者正方形的SVG ，文件命名为app-icon.png，将图片文件放置在项目的根目录
+
+2、cd进入到项目根目录，执行npm run tauri icon命令 然后就会自动生成相关尺寸的图标，并自动应用到对应的位置 图标存放和应用路径为项目根目录下的src-tauri\icons\
+
+```shell
+
+PS E:\rust\src\cluster-service\pc_platform> npm run tauri icon
+
+> pc_platform@0.0.0 tauri
+> tauri icon
+
+        Appx Creating StoreLogo.png
+        Appx Creating Square30x30Logo.png
+        Appx Creating Square44x44Logo.png
+        Appx Creating Square71x71Logo.png
+        Appx Creating Square89x89Logo.png
+        Appx Creating Square107x107Logo.png
+        Appx Creating Square142x142Logo.png
+        Appx Creating Square150x150Logo.png
+        Appx Creating Square284x284Logo.png
+        Appx Creating Square310x310Logo.png
+        ICNS Creating icon.icns
+         ICO Creating icon.ico
+         PNG Creating 32x32.png
+         PNG Creating 128x128.png
+         PNG Creating 128x128@2x.png
+         PNG Creating icon.png
+
 
 ```
 

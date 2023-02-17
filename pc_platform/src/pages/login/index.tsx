@@ -106,8 +106,8 @@ const Login = () => {
         <div style={{backgroundImage: `url('/picture/login/login_background.png')`}} className='login-page'>
             <div data-tauri-drag-region className='window-title'>
                 <a onClick={handleAppClose} className='light red'/>
-                {/*<a className='light yellow'/>*/}
-                {/*<a className='light green'/>*/}
+                <a className='light yellow'/>
+                <a className='light green'/>
             </div>
             <Form {...layout} name="login" form={loinForm}>
                 <h2 className="title">统一身份认证入口</h2>
