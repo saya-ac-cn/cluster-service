@@ -33,7 +33,7 @@ export const openStageWindow = () => {
     const webview = new WebviewWindow("stage", {
         label: 'stage',
         title: '控制面板',
-        url: '/stage/home',
+        url: '/backstage/me',
         width: 1600,
         height: 900,
         center: true,

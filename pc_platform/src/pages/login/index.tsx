@@ -7,6 +7,7 @@ import {openNotificationWithIcon} from "@/utils/window";
 import { appWindow } from '@tauri-apps/api/window'
 import {loginApi,ownOrganizeUserApi} from "@/http/api"
 import { invoke } from '@tauri-apps/api/tauri'
+import {openStageWindow} from "@/windows/actions";
 /**
  * 表单布局
  */
@@ -71,7 +72,7 @@ const Login = () => {
                const cache = { account: values.account}
                Storage.add(Storage.LOGIN_KEY,cache)
            }
-           //openStageWindow()
+           openStageWindow()
         } else if (code === 5) {
            openNotificationWithIcon("error", "错误提示", '请输入用户名和密码');
         } else {
