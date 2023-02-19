@@ -7,7 +7,7 @@ const Router = () => {
 
 
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense>
             <Routes>
                 <Route path='/' element={<Login/>}/>
                 <Route path='/backstage/*' element={<Layout/>}/>

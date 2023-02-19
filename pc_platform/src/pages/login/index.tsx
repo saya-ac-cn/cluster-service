@@ -8,6 +8,7 @@ import { appWindow } from '@tauri-apps/api/window'
 import {loginApi,ownOrganizeUserApi} from "@/http/api"
 import { invoke } from '@tauri-apps/api/tauri'
 import {openStageWindow} from "@/windows/actions";
+import {isEmptyObject} from "@/utils/var";
 /**
  * 表单布局
  */
@@ -26,8 +27,34 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(()=>{
+        checkLogin()
         rememberMeData()
     },[])
+
+    const checkLogin = () => {
+        // 缓存数据缺一不可
+        const access_token = Storage.get(Storage.ACCESS_KEY)
+        if (isEmptyObject(access_token)){
+            return
+        }
+        const user = Storage.get(Storage.USER_KEY)
+        if (isEmptyObject(user)){
+            return
+        }
+        const plan = Storage.get(Storage.PLAN_KEY)
+        if (isEmptyObject(plan)){
+            return
+        }
+        const log = Storage.get(Storage.LOG_KEY)
+        if (isEmptyObject(log)){
+            return
+        }
+        const organize = Storage.get(Storage.ORGANIZE_KEY)
+        if (isEmptyObject(organize)){
+            return
+        }
+        openStageWindow()
+    }
 
     /**
      * 读取记住我的信息

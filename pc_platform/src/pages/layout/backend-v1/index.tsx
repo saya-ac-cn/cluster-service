@@ -9,6 +9,8 @@ import { Button, Input, Menu, Popover, Avatar, Breadcrumb, Badge, Modal} from 'a
 import {FlagOutlined,RightOutlined,LeftOutlined,MenuOutlined, HomeOutlined,NotificationOutlined,MessageOutlined, DatabaseOutlined,StockOutlined,FieldTimeOutlined,SearchOutlined,UserOutlined,AccountBookOutlined,ScheduleOutlined,PushpinOutlined,CarryOutOutlined,MoneyCollectOutlined,SwitcherOutlined} from '@ant-design/icons';
 import {openLoginWindow} from "@/windows/actions";
 import {appWindow} from "@tauri-apps/api/window";
+import Home from "@/pages/home";
+import Note from "@/pages/memory/note";
 
 /*
  * 文件名：index.jsx
@@ -40,16 +42,16 @@ const Layout = () => {
 
     const location = useLocation()
 
-    useEffect(()=>{
-        const user = Storage.get(Storage.USER_KEY) || {};
-        const plan = Storage.get(Storage.PLAN_KEY) || [];
-        const log = Storage.get(Storage.LOG_KEY) || {};
-        setUser(user)
-        setPlan(plan)
-        setLog(log)
-        // 初始化左侧导航
-        setMenuNodes(getMenuNodes(routes));
-    },[])
+    // useEffect(()=>{
+    //     const user = Storage.get(Storage.USER_KEY) || {};
+    //     const plan = Storage.get(Storage.PLAN_KEY) || [];
+    //     const log = Storage.get(Storage.LOG_KEY) || {};
+    //     setUser(user)
+    //     setPlan(plan)
+    //     setLog(log)
+    //     // 初始化左侧导航
+    //     setMenuNodes(getMenuNodes(routes));
+    // },[])
 
 
     // 左侧切换面板
@@ -92,25 +94,41 @@ const Layout = () => {
         // 得到当前请求的路由路径
         const path = location.pathname;
         return menuList.reduce((pre, item) => {
+            const _path = `/backstage${item.path}`;
             // 向pre添加<Menu.Item>
             if (!item.children && item.display === true) {
-                if(path===item.path){
-                    // 当前打开的是根节点且无子节点，无须展开
-                    setOpenKeys([])
+                // if(path===_path){
+                //     // 当前打开的是根节点且无子节点，无须展开
+                //     setOpenKeys([])
+                // }
+                // console.log(item)
+                // pre.push(({ label: <Button type="link" href={_path} style={{padding:0,color:'#3c4043'}}>{item.name}</Button>, key: _path,to:_path,icon: <item.icon/>}))
+
+
+                if(item.root){
+                    // 处理只有根节点，无子节点的菜单
+                    if(path===_path){
+                        // 当前打开的是根节点且无子节点，无须展开
+                        setOpenKeys([])
+                    }
+                    pre.push(({ label: <Button type="link" href={_path} style={{padding:0,color:'#3c4043'}}>{item.name}</Button>, key: _path,to:_path,icon: <item.icon/>}))
+                }else{
+                    pre.push(({ label: <Button type="link" href={_path}>{item.name}</Button>, key: _path,to:_path }))
                 }
-                pre.push(({ label: <Button type="link" href={item.path} style={{padding:0,color:'#3c4043'}}>{item.name}</Button>, key: item.path,to:item.path,icon: <item.icon/>}))
+
             } else if (item.children && item.display === true) {
                 // 查找一个与当前请求路径匹配的子Item
-                const cItem = item.children.find(cItem => path.indexOf(cItem.path) === 0);
+                const cItem = item.children.find(cItem => path.indexOf('/backstage'+cItem.path) === 0);
+                // console.log(path,item.children,cItem,_path)
                 // 如果存在, 说明当前item的子列表需要打开
                 if (cItem) {
-                    setOpenKeys([item.path])
+                    setOpenKeys([_path])
                 }
                 // 向pre添加<SubMenu>
                 pre.push((
                     {
                         label: item.name,
-                        key: item.path,
+                        key: _path,
                         icon: <item.icon/>,
                         children: getMenuNodes(item.children),
                     })
@@ -214,18 +232,14 @@ const Layout = () => {
                 for(let leaf of branch.children){
                     page.push(
                         <Route key={leaf.path} path={leaf.path} element={
-                            <Suspense fallback={<div>页面加载中...</div>}>
-                                <leaf.element/>
-                            </Suspense>
+                            <leaf.element/>
                         } />
                     )
                 }
             }else{
                 page.push(
                     <Route key={branch.path} path={branch.path} element={
-                        <Suspense fallback={<div>页面加载中...</div>}>
-                            <branch.element/>
-                        </Suspense>
+                        <branch.element/>
                     } />
                 )
             }
@@ -302,14 +316,14 @@ const Layout = () => {
                         </div>
                     </div>
                     <div className='menu-list'>
-                        <Menu className='menu-list-ul' subMenuCloseDelay={1}  subMenuOpenDelay={1}  onOpenChange={onOpenChange} openKeys={openKeys} defaultOpenKeys={openKeys} mode="inline"
-                              inlineCollapsed={leftCollapsed} items={menuNodes}>
-                        </Menu>
+                        {/*<Menu className='menu-list-ul' subMenuCloseDelay={1}  subMenuOpenDelay={1}  onOpenChange={onOpenChange} openKeys={openKeys} defaultOpenKeys={openKeys} mode="inline"*/}
+                        {/*      inlineCollapsed={leftCollapsed} items={menuNodes}>*/}
+                        {/*</Menu>*/}
                     </div>
                     <div className={`menu-copyright ${leftCollapsed?"menu-copyright-close":""}`}>
                         <Button type="link" title='切换壁纸' href="/backstage/oss/wallpaper"><SwitcherOutlined/></Button>
                         <Button type="link" title='数据统计' href="/backstage/me/chart"><StockOutlined/></Button>
-                        <Button type="link" title='操作日志' href="/backstage/me/logs"><FieldTimeOutlined/></Button>
+                        <Button type="link" title='操作日志' href="/backstage/me"><FieldTimeOutlined/></Button>
                     </div>
                 </div>
                 <div className='content-container'>
@@ -317,6 +331,10 @@ const Layout = () => {
                         <div className='container-div'>
                             <Routes>
                                 {pages()}
+                                {/*<Route path={'/me'} element={<Home/>}/>*/}
+                                {/*<Route path={'/financial/journal'} element={<Home/>}/>*/}
+                                {/*<Route path={'/financial/day'} element={<Home/>}/>*/}
+                                {/*<Route path={'/financial/note'} element={<Note/>}/>*/}
                             </Routes>
                         </div>
                     </div>

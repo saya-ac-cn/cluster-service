@@ -1,5 +1,6 @@
 import { WebviewWindow } from '@tauri-apps/api/window'
 
+// 参考 https://blog.csdn.net/weixin_47367099/article/details/127471024?spm=1001.2014.3001.5502
 export const openLoginWindow = () => {
     const webview = new WebviewWindow("login", {
         label: 'login',
@@ -17,16 +18,15 @@ export const openLoginWindow = () => {
     webview.once("tauri://created", function () {
         // webview window successfully created
         console.log('Login Open Success');
+        const stageWindow:WebviewWindow | null = WebviewWindow.getByLabel("stage");
+        if (stageWindow){
+            stageWindow?.close();
+        }
     });
     webview.once("tauri://error", function (e) {
         // an error happened creating the webview window
-        console.log('Login Open Fail:',e);
+        console.error('Login Open Fail:',e);
     });
-
-    const stageWindow:WebviewWindow | null = WebviewWindow.getByLabel("stage");
-    if (stageWindow){
-        stageWindow.close();
-    }
 }
 
 export const openStageWindow = () => {
@@ -45,14 +45,13 @@ export const openStageWindow = () => {
     webview.once("tauri://created", function () {
         // webview window successfully created
         console.log('Stage Open Success');
+        const loginWindow:WebviewWindow | null = WebviewWindow.getByLabel("login");
+        if (loginWindow){
+            loginWindow?.close();
+        }
     });
     webview.once("tauri://error", function (e) {
         // an error happened creating the webview window
-        console.log('Stage Open Fail:',e);
+        console.error('Stage Open Fail:',e);
     });
-
-    const loginWindow:WebviewWindow | null = WebviewWindow.getByLabel("login");
-    if (loginWindow){
-        loginWindow.close();
-    }
 }
