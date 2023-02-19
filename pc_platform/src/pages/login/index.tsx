@@ -82,7 +82,7 @@ const Login = () => {
 
     // 关闭
     const handleAppClose = async() => {
-        await appWindow.minimize()
+        await appWindow.hide()
     }
 
     /**

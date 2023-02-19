@@ -7,6 +7,8 @@ import routes from "@/config/routes";
 import {isEmptyObject} from "@/utils/var"
 import { Button, Input, Menu, Popover, Avatar, Breadcrumb, Badge, Modal} from 'antd';
 import {FlagOutlined,RightOutlined,LeftOutlined,MenuOutlined, HomeOutlined,NotificationOutlined,MessageOutlined, DatabaseOutlined,StockOutlined,FieldTimeOutlined,SearchOutlined,UserOutlined,AccountBookOutlined,ScheduleOutlined,PushpinOutlined,CarryOutOutlined,MoneyCollectOutlined,SwitcherOutlined} from '@ant-design/icons';
+import {openLoginWindow} from "@/windows/actions";
+import {appWindow} from "@tauri-apps/api/window";
 
 /*
  * 文件名：index.jsx
@@ -19,7 +21,7 @@ import {FlagOutlined,RightOutlined,LeftOutlined,MenuOutlined, HomeOutlined,Notif
 const Layout = () => {
 
     // 当前已经登录的用户信息
-    const [user,setUser] = useState({account:'shmily','name': '刘能凯',logo:'/picture/layout/user.png',backgroundUrl:'/picture/layout/background_2.jpg'})
+    const [user,setUser] = useState({account:'shmily','name': '刘能凯',logo:null,backgroundUrl:null})
     // 本日计划
     const [plan,setPlan] = useState([])
     // 上次操作记录
@@ -92,28 +94,23 @@ const Layout = () => {
         return menuList.reduce((pre, item) => {
             // 向pre添加<Menu.Item>
             if (!item.children && item.display === true) {
-                if(item.root){
-                    // 处理只有根节点，无子节点的菜单
-                    if(path===item.key){
-                        // 当前打开的是根节点且无子节点，无须展开
-                        setOpenKeys([])
-                    }
-                    pre.push(({ label: <Button type="link" href={item.key} style={{padding:0,color:'rgba(255, 255, 255, 0.7)'}}>{item.title}</Button>, key: item.key,to:item.key,icon: <item.icon/>}))
-                }else{
-                    pre.push(({ label: <Button type="link" href={item.key}>{item.title}</Button>, key: item.key,to:item.key }))
+                if(path===item.path){
+                    // 当前打开的是根节点且无子节点，无须展开
+                    setOpenKeys([])
                 }
+                pre.push(({ label: <Button type="link" href={item.path} style={{padding:0,color:'#3c4043'}}>{item.name}</Button>, key: item.path,to:item.path,icon: <item.icon/>}))
             } else if (item.children && item.display === true) {
                 // 查找一个与当前请求路径匹配的子Item
-                const cItem = item.children.find(cItem => path.indexOf(cItem.key) === 0);
+                const cItem = item.children.find(cItem => path.indexOf(cItem.path) === 0);
                 // 如果存在, 说明当前item的子列表需要打开
                 if (cItem) {
-                    setOpenKeys([item.key])
+                    setOpenKeys([item.path])
                 }
                 // 向pre添加<SubMenu>
                 pre.push((
                     {
-                        label: item.title,
-                        key: item.key,
+                        label: item.name,
+                        key: item.path,
                         icon: <item.icon/>,
                         children: getMenuNodes(item.children),
                     })
@@ -156,10 +153,9 @@ const Layout = () => {
                 // 请求注销接口
                 // await requestLogout();
                 // 删除保存的user数据
-                storageUtils.removeAll();
+                Storage.removeAll();
                 // 跳转到login
-                //props.history.replace('/')
-                window.location.href = '/'
+                openLoginWindow()
             }
         })
     };
@@ -195,18 +191,31 @@ const Layout = () => {
         window.location.href = '/backstage/memory/note/create'
     }
 
+    // 关闭
+    const handleAppClose = async() => {
+        await appWindow.hide()
+    }
+
+    // 最小化
+    const handleAppMinimize = async() => {
+        await appWindow.minimize()
+    }
+
+    // 最大化/还原
+    const handleAppToggle = async() => {
+        await appWindow.toggleMaximize()
+    }
+
     const pages = () => {
         let page = [];
-        for(let i of routes){
-            const branch = routes[i];
+        for(let branch of routes){
             if (branch.children){
                 // 还有子级
-                for(let j of branch.children){
-                    const leaf = branch.children[j]
+                for(let leaf of branch.children){
                     page.push(
                         <Route key={leaf.path} path={leaf.path} element={
                             <Suspense fallback={<div>页面加载中...</div>}>
-                                <item.element/>
+                                <leaf.element/>
                             </Suspense>
                         } />
                     )
@@ -215,21 +224,22 @@ const Layout = () => {
                 page.push(
                     <Route key={branch.path} path={branch.path} element={
                         <Suspense fallback={<div>页面加载中...</div>}>
-                            <item.element/>
+                            <branch.element/>
                         </Suspense>
                     } />
                 )
             }
         }
+        return page
     }
 
 
     return (
         <div className="backend-container">
             <div data-tauri-drag-region className='window-title'>
-                <a className='light red'/>
-                <a className='light yellow'/>
-                <a className='light green'/>
+                <a onClick={handleAppClose} className='light red'/>
+                <a onClick={handleAppMinimize} className='light yellow'/>
+                <a onClick={handleAppToggle} className='light green'/>
             </div>
             <div className='background-div' style={{backgroundImage:`url('${user.background_url ? user.background_url:'/picture/layout/background_2.jpg'}')`}}>
             </div>
@@ -306,7 +316,7 @@ const Layout = () => {
                     <div className='content-div'>
                         <div className='container-div'>
                             <Routes>
-                                {pages}
+                                {pages()}
                             </Routes>
                         </div>
                     </div>

@@ -11,7 +11,7 @@ interface Router {
 const routes : Array<Router> = [
     {
         name: '我',
-        path: '/backstage/me',
+        path: '/me',
         children: null,
         element: lazy(() => import('../pages/home')),
         display: true,
