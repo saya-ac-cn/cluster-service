@@ -1,7 +1,7 @@
 import {Suspense,useState,useEffect} from "react";
 
 import './index.less'
-import {Routes,Route,useNavigate,useLocation} from "react-router-dom";
+import {Routes,Route,useNavigate,useLocation,NavLink} from "react-router-dom";
 import Storage from '@/utils/storage'
 import routes from "@/config/routes";
 import {isEmptyObject} from "@/utils/var"
@@ -18,6 +18,32 @@ import Note from "@/pages/memory/note";
  * 创建日期：2020/7/15 - 10:20 下午
  * 描述：后台主页
  */
+const pages = () => {
+    let page = [];
+    for(let branch of routes){
+        if (branch.children){
+            // 还有子级
+            for(let leaf of branch.children){
+                page.push(
+                    <Route key={leaf.path} path={leaf.path} element={
+                        <Suspense fallback={'loading...'}>
+                            <leaf.element/>
+                        </Suspense>
+                    } />
+                )
+            }
+        }else{
+            page.push(
+                <Route key={branch.path} path={branch.path} element={
+                    <Suspense fallback={'loading...'}>
+                        <branch.element/>
+                    </Suspense>
+                } />
+            )
+        }
+    }
+    return page
+}
 
 // 定义组件（ES6）
 const Layout = () => {
@@ -42,16 +68,16 @@ const Layout = () => {
 
     const location = useLocation()
 
-    // useEffect(()=>{
-    //     const user = Storage.get(Storage.USER_KEY) || {};
-    //     const plan = Storage.get(Storage.PLAN_KEY) || [];
-    //     const log = Storage.get(Storage.LOG_KEY) || {};
-    //     setUser(user)
-    //     setPlan(plan)
-    //     setLog(log)
-    //     // 初始化左侧导航
-    //     setMenuNodes(getMenuNodes(routes));
-    // },[])
+    useEffect(()=>{
+        const user = Storage.get(Storage.USER_KEY) || {};
+        const plan = Storage.get(Storage.PLAN_KEY) || [];
+        const log = Storage.get(Storage.LOG_KEY) || {};
+        setUser(user)
+        setPlan(plan)
+        setLog(log)
+        // 初始化左侧导航
+        setMenuNodes(getMenuNodes(routes));
+    },[])
 
 
     // 左侧切换面板
@@ -94,26 +120,17 @@ const Layout = () => {
         // 得到当前请求的路由路径
         const path = location.pathname;
         return menuList.reduce((pre, item) => {
-            const _path = `/backstage${item.path}`;
             // 向pre添加<Menu.Item>
             if (!item.children && item.display === true) {
-                // if(path===_path){
-                //     // 当前打开的是根节点且无子节点，无须展开
-                //     setOpenKeys([])
-                // }
-                // console.log(item)
-                // pre.push(({ label: <Button type="link" href={_path} style={{padding:0,color:'#3c4043'}}>{item.name}</Button>, key: _path,to:_path,icon: <item.icon/>}))
-
-
                 if(item.root){
                     // 处理只有根节点，无子节点的菜单
-                    if(path===_path){
+                    if(path===item.path){
                         // 当前打开的是根节点且无子节点，无须展开
                         setOpenKeys([])
                     }
-                    pre.push(({ label: <Button type="link" href={_path} style={{padding:0,color:'#3c4043'}}>{item.name}</Button>, key: _path,to:_path,icon: <item.icon/>}))
+                    pre.push(({ label: <NavLink to={`/backstage${item.path}`} style={{cursor: 'pointer',padding:0}}>{item.name}</NavLink>, key: item.path,to:item.path,icon: <item.icon/>}))
                 }else{
-                    pre.push(({ label: <Button type="link" href={_path}>{item.name}</Button>, key: _path,to:_path }))
+                    pre.push(({ label: <NavLink to={`/backstage${item.path}`} style={{cursor: 'pointer'}}>{item.name}</NavLink>, key: item.path,to:item.path }))
                 }
 
             } else if (item.children && item.display === true) {
@@ -122,13 +139,13 @@ const Layout = () => {
                 // console.log(path,item.children,cItem,_path)
                 // 如果存在, 说明当前item的子列表需要打开
                 if (cItem) {
-                    setOpenKeys([_path])
+                    setOpenKeys(['/backstage'+path])
                 }
                 // 向pre添加<SubMenu>
                 pre.push((
                     {
                         label: item.name,
-                        key: _path,
+                        key: item.path,
                         icon: <item.icon/>,
                         children: getMenuNodes(item.children),
                     })
@@ -211,7 +228,18 @@ const Layout = () => {
 
     // 关闭
     const handleAppClose = async() => {
-        await appWindow.hide()
+        Modal.confirm({
+            title: '操作确认',
+            content:'确定关闭吗?',
+            onOk: async () => {
+                // 请求注销接口
+                // await requestLogout();
+                // 删除保存的user数据
+                Storage.removeAll();
+                // 跳转到login
+                await appWindow.close()
+            }
+        })
     }
 
     // 最小化
@@ -223,30 +251,6 @@ const Layout = () => {
     const handleAppToggle = async() => {
         await appWindow.toggleMaximize()
     }
-
-    const pages = () => {
-        let page = [];
-        for(let branch of routes){
-            if (branch.children){
-                // 还有子级
-                for(let leaf of branch.children){
-                    page.push(
-                        <Route key={leaf.path} path={leaf.path} element={
-                            <leaf.element/>
-                        } />
-                    )
-                }
-            }else{
-                page.push(
-                    <Route key={branch.path} path={branch.path} element={
-                        <branch.element/>
-                    } />
-                )
-            }
-        }
-        return page
-    }
-
 
     return (
         <div className="backend-container">
@@ -276,7 +280,7 @@ const Layout = () => {
                             (location.pathname).indexOf('/backstage/memory/note') !== 0 ?
                                 <div className='header-search-form-input'>
                                     <Button onClick={handleSearch}><SearchOutlined/></Button>
-                                    <Input placeholder="搜索笔记"
+                                    <Input placeholder="搜索笔记" maxLength={32}
                                            value={searchValue}
                                            onChange={searchInputChange}
                                            onPressEnter={handleSearch}/>
@@ -316,9 +320,9 @@ const Layout = () => {
                         </div>
                     </div>
                     <div className='menu-list'>
-                        {/*<Menu className='menu-list-ul' subMenuCloseDelay={1}  subMenuOpenDelay={1}  onOpenChange={onOpenChange} openKeys={openKeys} defaultOpenKeys={openKeys} mode="inline"*/}
-                        {/*      inlineCollapsed={leftCollapsed} items={menuNodes}>*/}
-                        {/*</Menu>*/}
+                        <Menu className='menu-list-ul' subMenuCloseDelay={1}  subMenuOpenDelay={1}  onOpenChange={onOpenChange} openKeys={openKeys} defaultOpenKeys={openKeys} mode="inline"
+                              inlineCollapsed={leftCollapsed} items={menuNodes}>
+                        </Menu>
                     </div>
                     <div className={`menu-copyright ${leftCollapsed?"menu-copyright-close":""}`}>
                         <Button type="link" title='切换壁纸' href="/backstage/oss/wallpaper"><SwitcherOutlined/></Button>
@@ -329,13 +333,15 @@ const Layout = () => {
                 <div className='content-container'>
                     <div className='content-div'>
                         <div className='container-div'>
-                            <Routes>
-                                {pages()}
-                                {/*<Route path={'/me'} element={<Home/>}/>*/}
-                                {/*<Route path={'/financial/journal'} element={<Home/>}/>*/}
-                                {/*<Route path={'/financial/day'} element={<Home/>}/>*/}
-                                {/*<Route path={'/financial/note'} element={<Note/>}/>*/}
-                            </Routes>
+                            <Suspense>
+                                <Routes>
+                                    {pages()}
+                                    {/*<Route path={'/me'} element={<Home/>}/>*/}
+                                    {/*<Route path={'/financial/journal'} element={<Home/>}/>*/}
+                                    {/*<Route path={'/financial/day'} element={<Home/>}/>*/}
+                                    {/*<Route path={'/financial/note'} element={<Note/>}/>*/}
+                                </Routes>
+                            </Suspense>
                         </div>
                     </div>
                     <div className='operation-info'>

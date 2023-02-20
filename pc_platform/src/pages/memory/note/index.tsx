@@ -409,4 +409,4 @@ const Note = () => {
 }
 
 // 对外暴露
-export default Note;
+export default React.memo(Note);
