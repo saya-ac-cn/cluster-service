@@ -5,7 +5,7 @@ import {Routes,Route,useNavigate,useLocation,NavLink} from "react-router-dom";
 import Storage from '@/utils/storage'
 import routes from "@/config/routes";
 import {isEmptyObject} from "@/utils/var"
-import { Button, Input, Menu, Popover, Avatar, Breadcrumb, Badge, Modal} from 'antd';
+import { Button, Input, Menu, Popover, Avatar, Spin, Badge, Modal} from 'antd';
 import {FlagOutlined,RightOutlined,LeftOutlined,MenuOutlined, HomeOutlined,NotificationOutlined,MessageOutlined, DatabaseOutlined,StockOutlined,FieldTimeOutlined,SearchOutlined,UserOutlined,AccountBookOutlined,ScheduleOutlined,PushpinOutlined,CarryOutOutlined,MoneyCollectOutlined,SwitcherOutlined} from '@ant-design/icons';
 import {openLoginWindow} from "@/windows/actions";
 import {appWindow} from "@tauri-apps/api/window";
@@ -26,7 +26,7 @@ const pages = () => {
             for(let leaf of branch.children){
                 page.push(
                     <Route key={leaf.path} path={leaf.path} element={
-                        <Suspense fallback={'loading...'}>
+                        <Suspense fallback={<div><Spin size="large"/></div>}>
                             <leaf.element/>
                         </Suspense>
                     } />
@@ -35,7 +35,7 @@ const pages = () => {
         }else{
             page.push(
                 <Route key={branch.path} path={branch.path} element={
-                    <Suspense fallback={'loading...'}>
+                    <Suspense fallback={<div><Spin size="large"/></div>}>
                         <branch.element/>
                     </Suspense>
                 } />

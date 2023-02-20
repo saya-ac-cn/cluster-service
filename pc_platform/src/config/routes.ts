@@ -1,4 +1,4 @@
-import {lazy, ReactElement} from 'react'
+import {lazy} from 'react'
 import {HomeOutlined,UserOutlined,MoneyCollectOutlined,ProfileOutlined,NotificationOutlined,FileTextOutlined,ScheduleOutlined,TagOutlined,HistoryOutlined} from '@ant-design/icons';
 interface Router {
     name: string,   // 组件名
