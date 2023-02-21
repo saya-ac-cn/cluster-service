@@ -9,8 +9,6 @@ import { Button, Input, Menu, Popover, Avatar, Spin, Badge, Modal} from 'antd';
 import {FlagOutlined,RightOutlined,LeftOutlined,MenuOutlined, HomeOutlined,NotificationOutlined,MessageOutlined, DatabaseOutlined,StockOutlined,FieldTimeOutlined,SearchOutlined,UserOutlined,AccountBookOutlined,ScheduleOutlined,PushpinOutlined,CarryOutOutlined,MoneyCollectOutlined,SwitcherOutlined} from '@ant-design/icons';
 import {openLoginWindow} from "@/windows/actions";
 import {appWindow} from "@tauri-apps/api/window";
-import Home from "@/pages/home";
-import Note from "@/pages/memory/note";
 
 /*
  * 文件名：index.jsx
@@ -64,8 +62,6 @@ const Layout = () => {
     // 搜索框的文本
     const [searchValue,setSearchValue] = useState<string>()
 
-    const navigate = useNavigate()
-
     const location = useLocation()
 
     useEffect(()=>{
@@ -76,7 +72,7 @@ const Layout = () => {
         setPlan(plan)
         setLog(log)
         // 初始化左侧导航
-        setMenuNodes(getMenuNodes(routes));
+        setMenuNodes(getMenuNodes(routes,location.pathname));
     },[])
 
 
@@ -113,47 +109,55 @@ const Layout = () => {
     /**
      * 根据menu的数据数组生成对应的标签数组
      * 使用reduce() + 递归调用
-     * @param menuList
+     * @param menuList 原始配置的菜单数据
+     * @param currentPath 当前url
      * @returns {*}
      */
-    const getMenuNodes = (menuList) => {
-        // 得到当前请求的路由路径
-        const path = location.pathname;
+    const getMenuNodes = (menuList,currentPath=location.pathname) => {
         return menuList.reduce((pre, item) => {
+            const _path = `/backstage${item.path}`;
             // 向pre添加<Menu.Item>
             if (!item.children && item.display === true) {
                 if(item.root){
                     // 处理只有根节点，无子节点的菜单
-                    if(path===item.path){
+                    if(currentPath===item.path){
                         // 当前打开的是根节点且无子节点，无须展开
                         setOpenKeys([])
                     }
-                    pre.push(({ label: <NavLink to={`/backstage${item.path}`} style={{cursor: 'pointer',padding:0}}>{item.name}</NavLink>, key: item.path,to:item.path,icon: <item.icon/>}))
+                    pre.push(({ label: <NavLink to={_path} onClick={()=>pageHandle(_path)} style={{color: `${currentPath===_path?'#7bc0fe':''}`}}>{item.name}</NavLink>, key: _path,icon: <item.icon/>}))
                 }else{
-                    pre.push(({ label: <NavLink to={`/backstage${item.path}`} style={{cursor: 'pointer'}}>{item.name}</NavLink>, key: item.path,to:item.path }))
+                    pre.push(({ label: <NavLink to={_path} onClick={()=>pageHandle(_path)} style={{color: `${currentPath===_path?'#7bc0fe':''}`}}>{item.name}</NavLink>, key: _path}))
                 }
 
             } else if (item.children && item.display === true) {
                 // 查找一个与当前请求路径匹配的子Item
-                const cItem = item.children.find(cItem => path.indexOf('/backstage'+cItem.path) === 0);
+                const cItem = item.children.find(cItem => currentPath.indexOf('/backstage'+cItem.path) === 0);
                 // console.log(path,item.children,cItem,_path)
                 // 如果存在, 说明当前item的子列表需要打开
                 if (cItem) {
-                    setOpenKeys(['/backstage'+path])
+                    setOpenKeys([_path])
                 }
                 // 向pre添加<SubMenu>
                 pre.push((
                     {
                         label: item.name,
-                        key: item.path,
+                        key: _path,
                         icon: <item.icon/>,
-                        children: getMenuNodes(item.children),
+                        children: getMenuNodes(item.children,currentPath),
                     })
                 );
             }
             return pre
         }, [])
     };
+
+    /**
+     * 监听页面切换事件（用于页面上的按钮在发生跳转时，及时回显作用到菜单）
+     * @param path 要跳转的路径
+     */
+    const pageHandle = (exceptUrl:string) => {
+        setMenuNodes(getMenuNodes(routes,exceptUrl));
+    }
 
     /**
      * 一级菜单点击展开事件

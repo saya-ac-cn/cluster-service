@@ -112,3 +112,5 @@ PS E:\rust\src\cluster-service\pc_platform> npm run tauri icon
 3、https://blog.csdn.net/m0_73121002/article/details/128331442
 
 4、react-router v6 https://www.jianshu.com/p/1c54f96831b9
+
+5、阻止父组件更新带来的子组件也重新渲染 https://blog.csdn.net/qq_37766810/article/details/121810665
