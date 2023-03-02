@@ -42,20 +42,21 @@ const Home = () => {
             <div className="funds-bottom">
                 <div className="funds-data">
                     <Descriptions title="基金详情" className='search-fund'>
-                        <Descriptions.Item label="基金名称">1810000000</Descriptions.Item>
-                        <Descriptions.Item label="净值日期">Hangzhou, Zhejiang</Descriptions.Item>
-                        <Descriptions.Item label="当日净值">empty</Descriptions.Item>
-                        <Descriptions.Item label="估算净值">No. 18</Descriptions.Item>
-                        <Descriptions.Item label="估算涨跌">No. 18</Descriptions.Item>
-                        <Descriptions.Item label="估值时间">No. 18</Descriptions.Item>
+                        <Descriptions.Item label="基金名称">万家精选</Descriptions.Item>
+                        <Descriptions.Item label="净值日期">2023-03-01</Descriptions.Item>
+                        <Descriptions.Item label="当日净值">1.5690</Descriptions.Item>
+                        <Descriptions.Item label="估算净值">1.5690</Descriptions.Item>
+                        <Descriptions.Item label="估算涨跌">0.25%</Descriptions.Item>
+                        <Descriptions.Item label="估值时间">2023-03-01</Descriptions.Item>
                     </Descriptions>
                     <div className="funds-container">
                         <div className="fund-setting">
+                            <div className="fund-form-label">交易设置</div>
                             <Form name="fund-form" labelCol={{ span: 5 }}  wrapperCol={{ span: 16 }}>
-                                <Form.Item name="radio-button" label="涨跌类型" rules={[{ required: true, message: '基金代码不能为空!' }]}>
+                                <Form.Item name="radio-button" label="涨跌类型" rules={[{ required: true, message: '买卖参数不能为空!' }]}>
                                     <Radio.Group>
-                                        <Radio.Button value="a">按百分比</Radio.Button>
-                                        <Radio.Button value="b">按差价</Radio.Button>
+                                        <Radio.Button value="a">%</Radio.Button>
+                                        <Radio.Button value="b">￥</Radio.Button>
                                     </Radio.Group>
                                     <Space direction="vertical" size="middle" className='fund-trade'>
                                         <div>每上涨<Input placeholder="1" className='fund-shares'/>%，买入<Input placeholder="1000" className='fund-shares'/>份</div>
@@ -73,20 +74,20 @@ const Home = () => {
                             </Form>
                         </div>
                         <div className="fund-chat">
-                            盈亏分析
+                            盈亏分析计算中......
                         </div>
                     </div>
                 </div>
                 <div className="tell-you">
                     <div className="notice">
                         <span className="warring">提示:</span>
-                        <div>1、相关基金数据均来自<span className="warring-color">天天基金网</span>；</div>
+                        <div>1、相关基金数据均来自<span className="warring-color">中国建设银行，天天基金网</span>；</div>
                         <div>2、在当前版本的交易过程中，<span className="warring-color">没有将交易费用纳入到实际的盈亏</span>，在实际交易中，请酌情考虑；</div>
                         <div>3、相关盈亏计算仅为参考，<span className="warring-color">不作为最终的收益结果</span>；</div>
                         <div>4、<span className="warring-color">市场有风险，交易需谨慎</span>；</div>
                     </div>
                     <div className="help">
-                        需要帮助？或有疑问？请发送Email到saya@saya.ac.cn(亲亲里实验室)寻求解决
+                        需要帮助？或有疑问？请发送Email到saya@saya.ac.cn(亲亲里实验室)寻求解决。
                     </div>
                 </div>
             </div>
