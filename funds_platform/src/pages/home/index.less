@@ -1,0 +1,95 @@
+.funds-div{
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  .funds-top{
+    height: 10em;
+    border-bottom: 1px solid #e7e7e7;
+    padding-left: 3em;
+    padding-top: 1em;
+
+    .page-name{
+      display: block;
+      font-size: 2em;
+      font-weight: bold;
+      color: #7bc0fe;
+    }
+
+    .search-form{
+      margin-top: 1.5em;
+    }
+  }
+
+  .funds-bottom{
+    flex: 1;
+    display: flex;
+    .funds-data{
+      flex: 1;
+      padding-left: 3em;
+      padding-top: 1em;
+      display: flex;
+      flex-direction: column;
+
+      .funds-container{
+        flex: 1;
+        display: flex;
+        .fund-setting{
+          width: 30em;
+
+          #fund-form{
+            .fund-trade{
+              margin-top: 1.5em;
+              display: flex;
+              .fund-shares{
+                width: 5em;
+                margin-left: .3em;
+                margin-right: .3em;
+              }
+            }
+
+          }
+        }
+        .fund-chat{
+          flex: 1;
+        }
+      }
+
+    }
+    .tell-you{
+      border-left: 1px solid #e7e7e7;
+      display: flex;
+      flex-direction: column;
+      width: 18em;
+
+      .notice{
+        flex: 1;
+        padding-top: 1em;
+        padding-left: 2em;
+        padding-right: 2em;
+        div{
+          margin-bottom: .4em;
+        }
+        .warring{
+          font-size: 1.2em;
+          font-weight: bold;
+          display: block;
+          margin-bottom: .6em;
+        }
+        .warring-color{
+          color: #7bc0fe;
+          font-weight: bolder;
+        }
+      }
+      .help{
+        height: 8em;
+        border-top: 1px solid #e7e7e7;
+        padding-top: 1em;
+        padding-left: 2em;
+        padding-right: 2em;
+      }
+    }
+  }
+
+}
