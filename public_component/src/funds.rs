@@ -50,7 +50,7 @@ pub async fn get_funds_info() -> Option<FundInfoDTO>{
     }
     let read_result = send_result.unwrap().text().await;
     if read_result.is_err() {
-        println!("处理基金数据失败，请稍后再试");
+       println!("处理基金数据失败，请稍后再试");
         return None;
     }
     let jsonp:String = read_result.unwrap();
@@ -248,12 +248,26 @@ pub fn compute_earnings(map: &mut HashMap<Decimal,u64>,net_worth:&Decimal) -> (D
 #[cfg(test)]
 mod test {
     use regex::Regex;
+    use public_component::service::{FUND_GAINS, FundService};
     use crate::funds::{get_funds_info, get_funds_list};
 
     #[tokio::test]
     async fn main(){
-        get_funds_info().await;
-        get_funds_list().await;
+        //get_funds_info().await;
+        //get_funds_list().await;
+
+        let service = FundService {};
+        // let funds_info = service.get_funds_info("007345").await;
+        // if funds_info.is_ok() {
+        //     let found = funds_info.unwrap();
+        //     println!("{}",format!("基金代码:{},基金名称:{},净值日期:{},当日净值:{},估算净值:{},涨跌{}",found.fundcode.unwrap(),found.name.unwrap(),found.jzrq.unwrap(),found.dwjz.unwrap(),found.gsz.unwrap(),found.gszzl.unwrap()));
+        // }
+        service.get_fund_net_worth_trend("007345").await;
+        let vec = FUND_GAINS.lock().unwrap();
+        for item in vec.to_vec() {
+            println!("{:?}",item)
+        }
+
         //println!("funds_info:{}",get_funds_info());
     }
 
