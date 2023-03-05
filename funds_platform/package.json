@@ -24,6 +24,7 @@
     "vite": "^4.0.0",
     "@tauri-apps/cli": "^1.2.2",
     "antd": "^5.2.1",
+    "@ant-design/charts": "^1.4.2",
     "less": "^4.1.3"
   }
 }

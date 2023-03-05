@@ -31,7 +31,18 @@
       padding-top: 1em;
       display: flex;
       flex-direction: column;
-
+      .fund-info-label{
+        color: #7bc0fe;
+        font-weight: 600;
+        border-left: 3px solid #7bc0fe;
+        padding-left: 6px;
+      }
+      .ant-spin-nested-loading,.ant-spin-container{
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+      }
       .funds-container{
         flex: 1;
         display: flex;
@@ -40,27 +51,41 @@
           width: 30em;
 
           .fund-form-label{
-            color: rgba(0, 0, 0, 0.88);
+            color: #7bc0fe;
             font-size: 1.15em;
             font-weight: 600;
             margin-bottom: 1.5em;
+            border-left: 3px solid #7bc0fe;
+            padding-left: 6px;
           }
 
           #fund-form{
-            .fund-trade{
-              margin-top: 1.5em;
-              display: flex;
-              .fund-shares{
-                width: 5em;
-                margin-left: .3em;
-                margin-right: .3em;
+            .fund-setting-where-div{
+              margin-bottom: 0;
+              span{
+                vertical-align: -webkit-baseline-middle;
+              }
+              .fund-setting-where{
+                display: inline-block;
+                width: calc(50% - 4em);
+                .fund-shares{
+                  width: 5em;
+                }
               }
             }
-
           }
         }
         .fund-chat{
           flex: 1;
+          padding: .5em;
+          .fund-analyse-label{
+            color: #7bc0fe;
+            font-size: 1.15em;
+            font-weight: 600;
+            margin-bottom: 1.5em;
+            border-left: 3px solid #7bc0fe;
+            padding-left: 6px;
+          }
         }
       }
 
@@ -99,5 +124,38 @@
       }
     }
   }
+
+  /// chat图表样式
+  .custom-tooltip {
+    width: 300px;
+    padding-top: 8px;
+    padding-left: 6px;
+    padding-bottom: 6px;
+    .custom-tooltip-title{
+      padding-left: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #7bc0fe;
+      border-left: 3px solid #7bc0fe;
+    }
+    .custom-tooltip-line{
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      div{
+        width: 48%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        span:nth-child(1)
+        {
+          font-weight: bolder;
+        }
+      }
+    }
+  }
+
+
 
 }

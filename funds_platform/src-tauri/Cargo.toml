@@ -14,8 +14,21 @@ tauri-build = { version = "1.2", features = [] }
 
 [dependencies]
 tauri = { version = "1.2", features = ["api-all", "system-tray"] }
+#serde and json
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+#http client,use rust-tls replace to native tls
+reqwest = { version = "0.11.11",default-features = false, features = ["json","cookies","rustls-tls"] }
+chrono = { version = "0.4", features = ["serde"] }
+#map
+indexmap = "1.7.0"
+tokio = { version = "1", features = ["full"] }
+# 正则相关
+regex = "1.7.0"
+#用于货币金额
+rust_decimal = "1.25.0"
+#static
+lazy_static = "1.4.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
