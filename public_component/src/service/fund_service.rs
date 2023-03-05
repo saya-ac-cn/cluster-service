@@ -3,11 +3,11 @@ use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
-use std::ops::{Add, Mul};
+use std::ops::{Add, Div, Mul};
 use std::path::Path;
 use chrono::{DateTime, FixedOffset, Local, NaiveDateTime};
 use rust_decimal::Decimal;
-use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 use serde_json::Value;
 use crate::vo::fund_info_vo::FundInfoDTO;
 use crate::vo::fund_net_worth_trend_vo::FundDataNetWorthTrendDTO;
@@ -162,79 +162,109 @@ impl FundService {
         // 持有份额，用于校验在卖出时，是否充足
         let mut hold:u64 = 0;
         // 按百分比
-
+        // 参数载入
         let rise:Decimal = arg.rise.clone().unwrap();
         let buy:i32 = arg.buy.clone().unwrap();
         let fall:Decimal = arg.fall.clone().unwrap();
         let sell:i32 = arg.sell.clone().unwrap();
         for item in vec.to_vec() {
+            // 当日涨幅 净值
             let net_worth:Decimal = item.y.clone().unwrap();
             let equity_return:Decimal = item.equityReturn.clone().unwrap();
             println!("{}",format!("\n-----{:?},净值:{:?},涨幅:{:?}%------",item.date,net_worth,equity_return));
-            if item.equityReturn >= rise {
+            if equity_return >= rise {
                 // 上涨的趋势
+                // 计算在上涨的时候，应该买 或者 卖出多少
+                let unit:u64 = self.compute_units(equity_return.clone(),rise.clone(),buy.abs() as u32);
                 if buy > 0 {
-                    // 给予买入
-                    println!("买入{}",buy);
-                    if hold_detail.contains_key(&net_worth) {
-                        // 原持有份额
-                        let tranche = hold_detail.get(&y).unwrap();
-                        // 加仓
-                        hold_detail.insert(y, (tranche+buy));
-                    }else {
-                        hold_detail.insert(y, buy as u64);
-                    }
-                    hold = hold + buy;
+                    // 给予买入，并更新持有份额
+                    hold = self.buy_funds(unit,&net_worth,&mut hold_detail,hold);
                 }else {
-                    // 给予卖出
-                    // 检查是否充足
-                    let _sell:i32 = buy.abs();
-                    if hold < _sell {
-                        println!("干啥勒，份额不足");
-                        continue;
-                    }
-                    println!("卖出{}",_sell);
-                    hold = hold - _sell;
-                    // 给予卖出
-                    // 添加到总套现中
-                    cash_out = cash_out.add(net_worth.mul(Decimal::from(_sell)));
+                    // 给予卖出，并更新套现总额和份额
+                    (hold,cash_out) = self.sell_funds(unit,&net_worth,cash_out.clone(),hold);
                 }
-
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
-                let (_cost,_sell) = compute_earnings(&mut hold_detail, &y);
-                println!("{}",format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------",date,hold,(_sell-sell),sell,_cost,((_sell-_cost)/_cost*Decimal::from(100)).round_dp(5)));
-                continue
+                let (_cost,_sell) = self.compute_earnings(&hold_detail, &net_worth);
+                println!("{}",format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------",item.date.clone().unwrap(),hold,(_sell-cash_out),cash_out,_cost,((_sell-_cost)/_cost*Decimal::from(100)).round_dp(5)));
+                continue;
             }
-            if item.equityReturn < fall {
+            if equity_return < fall {
+                let unit:u64 = self.compute_units(equity_return.clone(),fall.clone(),sell.abs() as u32);
                 // 下跌的趋势
                 if sell > 0 {
                     // 给予卖出
+                    (hold,cash_out) = self.sell_funds(unit,&net_worth,cash_out.clone(),hold);
                 }else {
                     // 给予买入
-                    let _buy:i32 = sell.abs();
+                    hold = self.buy_funds(unit,&net_worth,&mut hold_detail,hold);
                 }
-
-
-
-
-
-                if hold < 1000 {
-                    println!("干啥勒，份额不足");
-                    continue;
-                }
-                hold = hold - 1000;
-                // 给予卖出
-                println!("卖出1000");
-                // 添加到总套现中
-                sell = sell.add(y.mul(Decimal::from(1000)));
-                // 套现后 触发一次持有收益的计算
-                let (_cost,_sell) = compute_earnings(&mut hold_detail, &y);
-                println!("{}",format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------",date,hold,(_sell-sell),sell,_cost,((_sell-_cost)/_cost*Decimal::from(100)).round_dp(5)));
+                let (_cost,_sell) = self.compute_earnings(&mut hold_detail, &net_worth);
+                println!("{}",format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------",item.date.clone().unwrap(),hold,(_sell-cash_out),cash_out,_cost,((_sell-_cost)/_cost*Decimal::from(100)).round_dp(5)));
                 continue;
             }
-            let (_cost,_sell) = compute_earnings(&mut hold_detail, &y);
-            println!("{}",format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------",date,hold,(_sell-sell),sell,_cost,((_sell-_cost)/_cost*Decimal::from(100)).round_dp(5)));
+            let (_cost,_sell) = self.compute_earnings(&mut hold_detail, &net_worth);
+            println!("{}",format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------",item.date.clone().unwrap(),hold,(_sell-cash_out),cash_out,_cost,((_sell-_cost)/_cost*Decimal::from(100)).round_dp(5)));
         }
         return Err(Error::from("累计净值走势数据转换失败，请稍后再试..."));
+    }
+
+    /// 计算上涨或者下跌后，应该买入的量
+    /// net_worth_equity 当日涨幅变化（涨幅比，或者涨幅量）
+    /// unit 买卖步长
+    pub fn compute_units(&self,net_worth_equity:Decimal,rise_fall:Decimal,unit:u32) -> u64{
+        // 计算有多少段上涨或者下跌，以确定买入或者卖出多少笔
+        let change_segment:u32 = net_worth_equity.div(rise_fall).trunc().abs().to_u32().unwrap();
+        // 计算买入或者卖出笔数
+        (change_segment * unit)  as u64
+    }
+
+    /// 买入基金
+    /// buy 买入份额参数
+    /// net_worth 当日净值
+    /// hold_detail 持有明细
+    /// hold 持有总份额
+    pub fn buy_funds(&self,buy:u64,net_worth:&Decimal,hold_detail: &mut HashMap<Decimal,u64>,hold:u64) -> u64{
+        println!("买入{}",buy);
+        if hold_detail.contains_key(net_worth) {
+            // 原持有份额
+            let tranche = hold_detail.get(net_worth).unwrap();
+            // 加仓
+            hold_detail.insert(*net_worth, (tranche+buy));
+        }else {
+            hold_detail.insert(*net_worth, buy);
+        }
+        hold + buy
+    }
+
+    /// 卖出基金
+    /// sell 卖出份额参数
+    /// net_worth 当日净值
+    /// cash_out 总套现额
+    /// hold 持有总份额
+    pub fn sell_funds(&self,sell:u64,net_worth:&Decimal,cash_out:Decimal,hold:u64) -> (u64,Decimal){
+        // 给予卖出
+        // 检查是否充足
+        if hold < sell as u64 {
+            println!("干啥勒，份额不足");
+            return (hold,cash_out);
+        }
+        println!("卖出{}",sell);
+        // 给予卖出 并 添加到总套现中
+        ((hold - sell),cash_out.add(net_worth.mul(Decimal::from(sell))))
+    }
+
+    /// 计算持仓收益
+    pub fn compute_earnings(&self, map: &HashMap<Decimal,u64>,net_worth:&Decimal) -> (Decimal,Decimal){
+        // 持有总成本价
+        let mut cost:Decimal = Decimal::from(0);
+        // 持有总市值
+        let mut sell:Decimal = Decimal::from(0);
+        for (key, value) in map.iter() {
+            // 持有份额
+            let number: Decimal = Decimal::from(*value);
+            cost = cost.add(number.mul(key));
+            sell = sell.add(number.mul(net_worth));
+        }
+        (cost,sell)
     }
 }
