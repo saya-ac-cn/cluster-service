@@ -450,8 +450,8 @@ const Home = () => {
                                         <Form.Item name="rise" initialValue={where.rise}  rules={[{ required: true,message: '请输入上涨幅度'}]} className="fund-setting-where">
                                             <Input placeholder="1" className='fund-shares'/>
                                         </Form.Item>
-                                        <span>{calculateType}，买入：</span>
-                                        <Form.Item name="buy" initialValue={where.buy} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where">
+                                        <span>{calculateType}，卖出：</span>
+                                        <Form.Item name="buy" initialValue={where.sell} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where">
                                             <Input placeholder="1" className='fund-shares'/>
                                         </Form.Item>
                                         <span>份</span>
@@ -460,8 +460,8 @@ const Home = () => {
                                         <Form.Item name="fall" initialValue={where.fall} rules={[{ required: true,message: '请输入下跌幅度'}]} className="fund-setting-where">
                                             <Input placeholder="1" className='fund-shares'/>
                                         </Form.Item>
-                                        <span>{calculateType}，卖出：</span>
-                                        <Form.Item name="sell" initialValue={where.sell} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where">
+                                        <span>{calculateType}，买入：</span>
+                                        <Form.Item name="sell" initialValue={where.buy} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where">
                                             <Input placeholder="1" className='fund-shares'/>
                                         </Form.Item>
                                         <span>份</span>

@@ -192,23 +192,23 @@ impl FundService {
             let net_worth: Decimal = item.y.clone().unwrap();
             let equity_return: Decimal = item.equityReturn.clone().unwrap();
             let gains: Decimal = item.gains.clone().unwrap();
-            // 本次交易类型
-            let mut trade_type:String = String::new();
             //println!("{}", format!("\n-----{:?},净值:{:?},涨幅:{:?}%------", item.date, net_worth, equity_return));
             if equity_return >= rise {
-                // 上涨的趋势
-                // 计算在上涨的时候，应该买 或者 卖出多少
-                let unit: u64 = self.compute_units(equity_return.clone(), rise.clone(), buy.abs() as u32);
-                if buy > 0 {
-                    // 给予买入，并更新持有份额
+                // 上涨的趋势 正数为卖出，负数为买入
+                let unit: u64 = self.compute_units(equity_return.clone(), rise.clone(), sell.abs() as u32);
+                // 本次交易类型
+                let mut trade_type:String = String::new();
+                if sell > 0 {
+                    // 给予卖出
+                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
+                    trade_type = String::from("赎回");
+                } else {
+                    // 给予买入
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
                     trade_type = String::from("买入");
-                } else {
-                    // 给予卖出，并更新套现总额和份额
-                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
                 }
+
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
                 let (_cost, _sell) = self.compute_earnings(&hold_detail, &net_worth);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
@@ -229,17 +229,18 @@ impl FundService {
                 continue;
             }
             if equity_return < fall {
-                let unit: u64 = self.compute_units(equity_return.clone(), fall.clone(), sell.abs() as u32);
-                // 下跌的趋势
-                if sell > 0 {
-                    // 给予卖出
-                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
-                } else {
-                    // 给予买入
+                // 下跌的趋势 正数为买入，负数为卖出
+                let unit: u64 = self.compute_units(equity_return.clone(), fall.clone(), buy.abs() as u32);
+                let mut trade_type:String = String::new();
+                if buy > 0 {
+                    // 给予买入，并更新持有份额
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
                     trade_type = String::from("买入");
+                } else {
+                    // 给予卖出，并更新套现总额和份额
+                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
+                    trade_type = String::from("赎回");
                 }
                 let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
@@ -261,12 +262,13 @@ impl FundService {
             }
             let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
             //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
+            // 今日无交易
             let _result = FundIncomeVO{
                 date: item.date.clone(),
                 net_worth: Some(net_worth.clone()),
                 rise_rate: item.equityReturn.clone().unwrap().to_f64(),
                 rise: Some(gains.clone()),
-                trade_type: Some(trade_type),
+                trade_type: Some(String::from("-")),
                 trade_share: Some(real_trade_share),
                 hold_share: Some(hold),
                 hold_value: Some(_sell - cash_out),
@@ -311,23 +313,23 @@ impl FundService {
             let net_worth: Decimal = item.y.clone().unwrap();
             let gains: Decimal = item.gains.clone().unwrap();
             let equity_return: Decimal = item.equityReturn.clone().unwrap();
-            // 本次交易类型
-            let mut trade_type:String = String::new();
             //println!("{}", format!("\n-----{:?},净值:{:?},涨幅:{:?}------", item.date.clone().unwrap(), net_worth, gains.round_dp(5)));
             if gains >= rise {
-                // 上涨的趋势
-                // 计算在上涨的时候，应该买 或者 卖出多少
-                let unit: u64 = self.compute_units(gains.clone(), rise.clone(), buy.abs() as u32);
-                if buy > 0 {
-                    // 给予买入，并更新持有份额
+                // 上涨的趋势 正数为卖出，负数为买入
+                let unit: u64 = self.compute_units(gains.clone(), rise.clone(), sell.abs() as u32);
+                // 本次交易类型
+                let mut trade_type:String = String::new();
+                if sell > 0 {
+                    // 给予卖出
+                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
+                    trade_type = String::from("赎回");
+                } else {
+                    // 给予买入
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
                     trade_type = String::from("买入");
-                } else {
-                    // 给予卖出，并更新套现总额和份额
-                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
                 }
+
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
                 let (_cost, _sell) = self.compute_earnings(&hold_detail, &net_worth);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
@@ -348,18 +350,20 @@ impl FundService {
                 continue;
             }
             if gains < fall {
-                let unit: u64 = self.compute_units(gains.clone(), fall.clone(), sell.abs() as u32);
-                // 下跌的趋势
-                if sell > 0 {
-                    // 给予卖出
-                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
-                } else {
-                    // 给予买入
+                // 下跌的趋势 正数为买入，负数为卖出
+                let unit: u64 = self.compute_units(gains.clone(), fall.clone(), buy.abs() as u32);
+                let mut trade_type:String = String::new();
+                if buy > 0 {
+                    // 给予买入，并更新持有份额
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
                     trade_type = String::from("买入");
+                } else {
+                    // 给予卖出，并更新套现总额和份额
+                    (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
+                    trade_type = String::from("赎回");
                 }
+
                 let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
                 let _result = FundIncomeVO{
@@ -380,12 +384,13 @@ impl FundService {
             }
             let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
             //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
+            // 今日无交易
             let _result = FundIncomeVO{
                 date: item.date.clone(),
                 net_worth: Some(net_worth.clone()),
                 rise_rate: item.equityReturn.clone().unwrap().to_f64(),
                 rise: Some(gains.clone()),
-                trade_type: Some(trade_type),
+                trade_type: Some(String::from("-")),
                 trade_share: Some(real_trade_share),
                 hold_share: Some(hold),
                 hold_value: Some(_sell - cash_out),
