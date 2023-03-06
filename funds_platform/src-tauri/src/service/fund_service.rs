@@ -201,12 +201,12 @@ impl FundService {
                 if sell > 0 {
                     // 给予卖出
                     (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
+                    trade_type = if 0 == real_trade_share {String::from("-")}else{String::from("赎回")};
                 } else {
                     // 给予买入
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
-                    trade_type = String::from("买入");
+                    trade_type = if 0 == unit {String::from("-")}else{String::from("买入")};
                 }
 
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
@@ -236,11 +236,11 @@ impl FundService {
                     // 给予买入，并更新持有份额
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
-                    trade_type = String::from("买入");
+                    trade_type = if 0 == unit {String::from("-")}else{String::from("买入")};
                 } else {
                     // 给予卖出，并更新套现总额和份额
                     (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
+                    trade_type = if 0 == real_trade_share {String::from("-")}else{String::from("赎回")};
                 }
                 let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
@@ -322,12 +322,12 @@ impl FundService {
                 if sell > 0 {
                     // 给予卖出
                     (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
+                    trade_type = if 0 == real_trade_share {String::from("-")}else{String::from("赎回")};
                 } else {
                     // 给予买入
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
-                    trade_type = String::from("买入");
+                    trade_type = if 0 == unit {String::from("-")}else{String::from("买入")};
                 }
 
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
@@ -357,11 +357,11 @@ impl FundService {
                     // 给予买入，并更新持有份额
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
-                    trade_type = String::from("买入");
+                    trade_type = if 0 == unit {String::from("-")}else{String::from("买入")};
                 } else {
                     // 给予卖出，并更新套现总额和份额
                     (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
-                    trade_type = String::from("赎回");
+                    trade_type = if 0 == real_trade_share {String::from("-")}else{String::from("赎回")};
                 }
 
                 let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
