@@ -12,4 +12,5 @@ pub struct FundSettingDTO {
     pub buy:Option<i32>,// 买入量
     pub fall:Option<Decimal>,//跌 必须为正数
     pub sell:Option<i32>,// 卖出入量
+    pub save_path:Option<String>// 保存位置
 }

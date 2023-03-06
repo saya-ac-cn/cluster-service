@@ -30,3 +30,8 @@ pub async fn query_fund_info(fund_code:&str) -> Result<FundInfoVO> {
 pub async fn fund_calculate(param:FundSettingDTO) -> Result<Vec<FundIncomeVO>> {
     CONTEXT.fund_service.calculate_income(&param)
 }
+
+#[tauri::command]
+pub async fn out_excel(param:FundSettingDTO) -> Result<String> {
+    CONTEXT.fund_service.out_excel(&param)
+}

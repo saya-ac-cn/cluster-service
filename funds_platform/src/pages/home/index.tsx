@@ -1,12 +1,13 @@
 import React, {useEffect, useState} from "react";
 import { Descriptions,Spin,Button, DatePicker, Form, Input ,Radio,notification } from 'antd';
-import { CheckOutlined,SearchOutlined } from '@ant-design/icons';
+import { CheckOutlined,SearchOutlined,FileExcelOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import * as dayjs from 'dayjs'
 import { invoke } from '@tauri-apps/api/tauri'
 import './index.less'
 import { Line } from '@ant-design/charts';
-
+import { open } from '@tauri-apps/api/dialog';
+import { desktopDir } from '@tauri-apps/api/path';
 
 
 const { RangePicker } = DatePicker;
@@ -19,6 +20,7 @@ const Home = () => {
     const [fundInfo, setFundInfo] = useState({fundcode:null,name:null,jzrq:null,dwjz:null,gsz:null,gszzl:0,gztime:null,start_date:null,end_date:null});
     const [queryLoading, setQueryLoading] = useState(false);
     const [calculateLoading, setCalculateLoading] = useState(false);
+    const [excelLoading, setExcelLoading] = useState(false);
     const [result, setResult] = useState([
         {
             cash_out: "0",
@@ -141,6 +143,10 @@ const Home = () => {
         setData(data)
     }, []);
 
+    /**
+     * 查询基金详情
+     * @param values 验证通过的表单
+     */
     const onQuery = (values: any) => {
         setQueryLoading(true)
         setLoading(true)
@@ -158,36 +164,106 @@ const Home = () => {
 
     };
 
-    const onCalculate = (values: any) => {
+    /**
+     * 计算收益（含导出）
+     */
+    const onCalculate = () => {
         const {fundcode,start_date,end_date } = fundInfo;
         if (null == fundcode || null === start_date || null === end_date){
             openNotification('请先查询基金详细信息~');
             return
         }
-        setCalculateLoading(true)
-        setLoading(true)
-        const param = {
-            fund_code:fundcode,
-            start_date:values.date[0].unix()*1000,
-            end_date:values.date[1].unix()*1000,
-            buy:values.buy,
-            fall:values.fall,
-            flag:values.flag,
-            rise:values.rise,
-            sell:values.sell
-        }
-        invoke('fund_calculate',{param:param}).then((message) => {
-            setResult(message);
-            console.log('Success:', message);
-            setCalculateLoading(false)
-            setLoading(false)
-        }).catch((error) => {
-            setCalculateLoading(false)
-            setLoading(false)
-            console.error('error',error)
-            openNotification(error);
-        })
+        whereForm.validateFields(['flag','buy','fall','rise','sell','date']).then((values) => {
+            setCalculateLoading(true)
+            setLoading(true)
+            const param = {
+                fund_code:fundcode,
+                start_date:values.date[0].unix()*1000,
+                end_date:values.date[1].unix()*1000,
+                buy:values.buy,
+                fall:values.fall,
+                flag:values.flag,
+                rise:values.rise,
+                sell:values.sell
+            }
+            invoke('fund_calculate',{param:param}).then((message) => {
+                const data = []
+                const warehouse = {};
+                for (const index in message) {
+                    const item = message[index]
+                    data.push({date:item.date,value:item.rise_rate,category:'净值涨幅'})
+                    data.push({date:item.date,value:item.earning_rate,category:'累计收益'})
+                    warehouse[item.date] = item
+                }
+                setWarehouse(warehouse);
+                setData(data)
+
+                setCalculateLoading(false)
+                setLoading(false)
+            }).catch((error) => {
+                setCalculateLoading(false)
+                setLoading(false)
+                console.error('error',error)
+                openNotification(error);
+            })
+        }).catch(e => {
+            console.error("表单或者计算发生错误",e)
+        });
     };
+
+    /**
+     * 导出激素哑巴结果
+     */
+    const onOutExcel = async () => {
+        const {fundcode,start_date,end_date } = fundInfo;
+        if (null == fundcode || null === start_date || null === end_date){
+            openNotification('请先查询基金详细信息~');
+            return
+        }
+        // 选择存储位置
+        const save_path = await open({
+            directory: true,
+            multiple: false,
+            defaultPath: await desktopDir(),
+        });
+        if (!save_path){
+            openNotification('请选择保存位置~');
+            return
+        }
+
+        whereForm.validateFields(['flag','buy','fall','rise','sell','date']).then((values) => {
+            setCalculateLoading(true)
+            setExcelLoading(true)
+            const param = {
+                fund_code:fundcode,
+                start_date:values.date[0].unix()*1000,
+                end_date:values.date[1].unix()*1000,
+                buy:values.buy,
+                fall:values.fall,
+                flag:values.flag,
+                rise:values.rise,
+                sell:values.sell,
+                save_path:save_path
+            }
+            invoke('out_excel',{param:param}).then((message) => {
+                notification.success({
+                    message: `执行结果`,
+                    placement:'topRight',
+                    description:'导出成功'
+                })
+                setCalculateLoading(false)
+                setExcelLoading(false)
+            }).catch((error) => {
+                setCalculateLoading(false)
+                setExcelLoading(false)
+                console.error('error',error)
+                openNotification(error);
+            })
+        }).catch(e => {
+            console.error("表单或者导出发生错误",e)
+        });
+
+    }
 
     // 计算类型的切换
     const switchType = (e) => {
@@ -260,8 +336,32 @@ const Home = () => {
                 const data = items[0]?.data || {};
                 const date = data.date;
                 const item = date?warehouse[date]:{}
-
-                const result_dom = `<div class="custom-tooltip">
+                if (!item){
+                    return `<div class="custom-tooltip">
+                    <div class ="custom-tooltip-title">${date}</div>
+                    <div class="custom-tooltip-line">
+                       <div><span>净值：</span><span></span></div>
+                       <div><span>净值涨幅：</span><span></span></div>
+                    </div>
+                    <div class="custom-tooltip-line">
+                       <div><span>涨幅：</span><span></span></div>
+                       <div><span>交易类型：</span><span></span></div>
+                    </div>
+                    <div class="custom-tooltip-line">
+                       <div><span>交易份额：</span><span></span></div>
+                       <div><span>持有份额：</span><span></span></div>
+                    </div>
+                    <div class="custom-tooltip-line">
+                       <div><span>持有总市值：</span><span></span></div>
+                       <div><span>已赎回：</span><span></span></div>
+                    </div>
+                    <div class="custom-tooltip-line">
+                       <div><span>总成本价：</span><span></span></div>
+                       <div><span>累计收益：</span><span></span></div>
+                    </div>
+                </div>`
+                }else {
+                 return `<div class="custom-tooltip">
                     <div class ="custom-tooltip-title">${date}</div>
                     <div class="custom-tooltip-line">
                        <div><span>净值：</span><span>${item ? item.net_worth : null}</span></div>
@@ -284,7 +384,7 @@ const Home = () => {
                        <div><span>累计收益：</span><span>${item ? item.earning_rate : null}%</span></div>
                     </div>
                 </div>`
-                return result_dom;
+                }
             }
         }
     };
@@ -339,7 +439,7 @@ const Home = () => {
                         <div className="funds-container">
                             <div className="fund-setting">
                                 <div className="fund-form-label">交易设置</div>
-                                <Form name="fund-form" form={whereForm} onFinish={onCalculate} labelCol={{ span: 5 }}  wrapperCol={{ span: 16 }}>
+                                <Form name="fund-form" form={whereForm} labelCol={{ span: 5 }}  wrapperCol={{ span: 16 }}>
                                     <Form.Item name="flag" initialValue={where.flag} label="涨跌类型" rules={[{ required: true, message: '买卖参数不能为空!' }]}>
                                         <Radio.Group>
                                             <Radio.Button onChange={switchType} value={true}>%</Radio.Button>
@@ -370,14 +470,19 @@ const Home = () => {
                                         <RangePicker disabledDate={disabledDate}/>
                                     </Form.Item>
                                     <Form.Item wrapperCol={{ offset: 2}}>
-                                        <Button type="primary" htmlType="submit" loading={calculateLoading}>
+                                        <Button type="primary" onClick={onCalculate} loading={calculateLoading}>
                                             <CheckOutlined />计算
                                         </Button>
                                     </Form.Item>
                                 </Form>
                             </div>
                             <div className="fund-chat">
-                                <div className="fund-analyse-label">收益分析</div>
+                                <div className="fund-analyse-label">
+                                    <span>收益分析</span>
+                                    <Button type="primary" size="small" onClick={onOutExcel} loading={excelLoading}>
+                                        <FileExcelOutlined />导出
+                                    </Button>
+                                </div>
                                 <Line {...config} />
                             </div>
                         </div>

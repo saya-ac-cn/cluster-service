@@ -5,7 +5,7 @@ use funds_platform::controller::{fund_controller};
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![fund_controller::query_fund_info,fund_controller::fund_calculate])
+        .invoke_handler(tauri::generate_handler![fund_controller::query_fund_info,fund_controller::fund_calculate,fund_controller::out_excel])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

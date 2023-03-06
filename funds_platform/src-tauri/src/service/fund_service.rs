@@ -16,6 +16,8 @@ use crate::service::FUND_GAINS;
 use crate::util::Result;
 use crate::util::Error;
 use crate::vo::fund_income_vo::FundIncomeVO;
+extern crate simple_excel_writer as excel;
+use excel::*;
 
 pub struct FundService {}
 
@@ -80,32 +82,27 @@ impl FundService {
 
     /// 获取基金历史收益
     pub async fn get_fund_net_worth_trend(&self, fund_code: &str) -> Result<FundDataNetWorthTrendVO> {
-        // let mut map = HashMap::new();
-        // map.insert("type","lsjz");
-        // map.insert("code","007345");
-        // map.insert("sdate","2020-09-01");
-        // map.insert("edate","2020-09-28");
-        // map.insert("page","1");
-        // map.insert("per","30");
-        // let client = reqwest::Client::builder().build().unwrap();
-        // // https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz&code=007345&page=1&per=20&sdate=2020-09-01&edate=2020-09-28
-        // let send_result = client.get("https://fundf10.eastmoney.com/F10DataApi.aspx").query(&map).send().await;
-        // if send_result.is_err(){
-        //      return Err(Error::from("获取基金历史数据失败，请稍后再试..."));
-        // }
-        // let read_result = send_result.unwrap().text().await;
-        // if read_result.is_err() {
-        //    return Err(Error::from("处理基金历史数据失败，请稍后再试..."));
-        // }
-        // let jsonp:String = read_result.unwrap();
-        // if jsonp.is_empty() {
-        //    return Err(Error::from("未查询到基金历史数据，请稍后再试..."));
-        // }
-        // if jsonp.eq("jsonpgz();") {
-        //    return Err(Error::from("未查询到基金历史数据，请稍后再试..."));
-        // }
-        let respones = fs::read_to_string(Path::new("./src/service/funds.txt"))?;
-
+        let now = Local::now();
+        let mut map = HashMap::new();
+        // 加上时间戳，避免缓存
+        map.insert("v", now.timestamp());
+        let client = reqwest::Client::builder().build().unwrap();
+        let send_result = client.get(format!("http://fund.eastmoney.com/pingzhongdata/{}.js?v=20160518155842",fund_code)).query(&map).send().await;
+        if send_result.is_err(){
+             return Err(Error::from("获取基金历史数据失败，请稍后再试..."));
+        }
+        let read_result = send_result.unwrap().text().await;
+        if read_result.is_err() {
+           return Err(Error::from("处理基金历史数据失败，请稍后再试..."));
+        }
+        let respones:String = read_result.unwrap();
+        if respones.is_empty() {
+           return Err(Error::from("未查询到基金历史数据，请稍后再试..."));
+        }
+        if respones.eq("jsonpgz();") {
+           return Err(Error::from("未查询到基金历史数据，请稍后再试..."));
+        }
+        //let respones = fs::read_to_string(Path::new("./src/service/funds.txt"))?;
 
         // Data_netWorthTrend ;/*累计净值走势*/
         let start_bytes = respones.find("Data_netWorthTrend =").unwrap_or(0);
@@ -175,6 +172,9 @@ impl FundService {
         // 本次实际实际交易份额（在持有不足的情况下，卖出只能全部卖出）
         let mut real_trade_share: u64 = 0;
 
+        let start_date:i64 = arg.start_date.clone().unwrap();
+        let end_date:i64 = arg.end_date.clone().unwrap();
+
         // 参数载入
         let vec = FUND_GAINS.lock().unwrap();
         let rise: Decimal = arg.rise.clone().unwrap();
@@ -182,6 +182,12 @@ impl FundService {
         let fall: Decimal = arg.fall.clone().unwrap();
         let sell: i32 = arg.sell.clone().unwrap();
         for item in vec.to_vec() {
+            let _current:i64 = item.x.clone().unwrap();
+            if _current < start_date || _current > end_date {
+                // 不在时间范围内，跳过不予处理
+                continue;
+            }
+
             // 当日涨幅 净值
             let net_worth: Decimal = item.y.clone().unwrap();
             let equity_return: Decimal = item.equityReturn.clone().unwrap();
@@ -285,6 +291,9 @@ impl FundService {
         // 本次实际实际交易份额（在持有不足的情况下，卖出只能全部卖出）
         let mut real_trade_share: u64 = 0;
 
+        let start_date:i64 = arg.start_date.clone().unwrap();
+        let end_date:i64 = arg.end_date.clone().unwrap();
+
         // 参数载入
         let vec = FUND_GAINS.lock().unwrap();
         let rise: Decimal = arg.rise.clone().unwrap();
@@ -292,6 +301,12 @@ impl FundService {
         let fall: Decimal = arg.fall.clone().unwrap();
         let sell: i32 = arg.sell.clone().unwrap();
         for item in vec.to_vec() {
+            let _current:i64 = item.x.clone().unwrap();
+            if _current < start_date || _current > end_date {
+                // 不在时间范围内，跳过不予处理
+                continue;
+            }
+
             // 当日涨幅 净值
             let net_worth: Decimal = item.y.clone().unwrap();
             let gains: Decimal = item.gains.clone().unwrap();
@@ -442,5 +457,46 @@ impl FundService {
             sell = sell.add(number.mul(net_worth));
         }
         (cost, sell)
+    }
+
+    /// 将计算结果输出到excel
+    pub fn out_excel(&self, arg: &FundSettingDTO) -> Result<String>{
+        let save_path_op = arg.save_path.clone();
+        if save_path_op.is_none() {
+            return Err(Error::from("缺少保存路径..."));
+        }
+        let save_path:String = save_path_op.unwrap();
+        let result= self.calculate_income(arg);
+        if result.is_err() {
+            return Err(result.unwrap_err())
+        }
+        let rows:Vec<FundIncomeVO> = result.unwrap();
+        let mut wb:Workbook = Workbook::create(format!("{}/预测结果.xlsx",save_path).as_str());
+        let mut sheet:Sheet = wb.create_sheet("收益预测");
+        // 设置列宽
+        sheet.add_column(Column { width: 12.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        sheet.add_column(Column { width: 15.0 });
+        wb.write_sheet(&mut sheet, |sheet_writer| {
+            let sw = sheet_writer;
+            // 写入标题行
+            sw.append_row(row!["日期","净值", "净值涨幅", "涨幅", "交易类型", "交易份额","持有份额", "持有总市值", "已赎回", "总成本价", "累计收益"]);
+            for item in rows {
+                sw.append_row(row![item.date.unwrap(),item.net_worth.unwrap().to_string(),item.rise_rate.unwrap(),item.rise.unwrap().to_string(),item.trade_type.unwrap(),
+                item.trade_share.unwrap().to_string(),item.hold_share.unwrap().to_string(),item.hold_value.unwrap().to_string(),item.cash_out.unwrap().to_string(),item.cost.unwrap().to_string(),item.earning_rate.unwrap().to_string()
+                ]);
+            }
+            Ok(())
+        }).expect("write excel error!");
+        wb.close().expect("close excel error!");
+        return Ok(String::from("导出成功"))
     }
 }

@@ -29,6 +29,8 @@ regex = "1.7.0"
 rust_decimal = "1.25.0"
 #static
 lazy_static = "1.4.0"
+# Excel工具
+simple_excel_writer = "0.2.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
