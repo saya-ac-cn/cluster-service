@@ -232,7 +232,7 @@ impl FundService {
                 // 下跌的趋势 正数为买入，负数为卖出
                 let unit: u64 = self.compute_units(equity_return.clone(), fall.clone(), buy.abs() as u32);
                 let mut trade_type:String = String::new();
-                if buy > 0 {
+                if buy >= 0 {
                     // 给予买入，并更新持有份额
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
@@ -353,7 +353,7 @@ impl FundService {
                 // 下跌的趋势 正数为买入，负数为卖出
                 let unit: u64 = self.compute_units(gains.clone(), fall.clone(), buy.abs() as u32);
                 let mut trade_type:String = String::new();
-                if buy > 0 {
+                if buy >= 0 {
                     // 给予买入，并更新持有份额
                     real_trade_share = unit;
                     hold = self.buy_funds(unit, &net_worth, &mut hold_detail, hold);
@@ -418,7 +418,12 @@ impl FundService {
     /// net_worth 当日净值
     /// hold_detail 持有明细
     /// hold 持有总份额
+    /// 返回时，原持有+最新买入的
     pub fn buy_funds(&self, buy: u64, net_worth: &Decimal, hold_detail: &mut HashMap<Decimal, u64>, hold: u64) -> u64 {
+        if 0 == buy{
+            return hold;
+        }
+
         //println!("拟买入{}", buy);
         if hold_detail.contains_key(net_worth) {
             // 原持有份额
