@@ -251,7 +251,8 @@ mod test {
     use rust_decimal::Decimal;
     use rust_decimal::prelude::FromPrimitive;
     use public_component::dto::fund_setting_dto::FundSettingDTO;
-    use public_component::service::{FUND_GAINS, FundService};
+    use public_component::service::{CONTEXT, FUND_GAINS, FundService};
+    use public_component::vo::fund_info_vo::FundInfoVO;
     use crate::funds::{get_funds_info, get_funds_list};
 
     #[tokio::test]
@@ -259,28 +260,49 @@ mod test {
         //get_funds_info().await;
         //get_funds_list().await;
 
-        let service = FundService {};
-        //let funds_info = service.get_funds_info("007345").await;
-        // if funds_info.is_ok() {
-        //     let found = funds_info.unwrap();
-        //     println!("{}",format!("基金代码:{},基金名称:{},净值日期:{},当日净值:{},估算净值:{},涨跌{}",found.fundcode.unwrap(),found.name.unwrap(),found.jzrq.unwrap(),found.dwjz.unwrap(),found.gsz.unwrap(),found.gszzl.unwrap()));
-        // }
-        service.get_fund_net_worth_trend("007345").await;
-        let setting = FundSettingDTO{
-            fund_code: Some(String::from("007345")),
-            start_date: Some(1676217600000),
-            end_date: Some(1676995200000),
-            flag: Some(true),
-            rise: Some(Decimal::from(1)),
-            buy: Some(1000),
-            fall: Some(Decimal::from(1)),
-            sell: Some(1000)
-        };
-        service.calculate_income(&setting).await;
+
+        // let service = FundService {};
+        let funds_info = CONTEXT.fund_service.get_funds_info("007345").await;
+        if funds_info.is_ok() {
+            let fund = funds_info.unwrap();
+            CONTEXT.fund_service.get_fund_net_worth_trend("007345").await;
+            let vec = FUND_GAINS.lock().unwrap().to_vec();
+            if vec.is_empty() {
+                
+            }else{
+                let start_date = vec.get(0).unwrap().x;
+                let end_date = vec.get(vec.to_vec().len()-1).unwrap().x;
+                let result = FundInfoVO{
+                    start_date:vec.get(0).unwrap().x,
+                    end_date:vec.get(vec.to_vec().len()-1).unwrap().x,
+                    ..fund
+                };
+            }
+
+            println!("{}",format!("基金代码:{},基金名称:{},净值日期:{},当日净值:{},估算净值:{},涨跌{}",found.fundcode.unwrap(),found.name.unwrap(),found.jzrq.unwrap(),found.dwjz.unwrap(),found.gsz.unwrap(),found.gszzl.unwrap()));
+        }
         // let vec = FUND_GAINS.lock().unwrap();
         // for item in vec.to_vec() {
         //     println!("{:?}",item)
         // }
+
+        // let setting = FundSettingDTO{
+        //     fund_code: Some(String::from("007345")),
+        //     start_date: Some(1676217600000),
+        //     end_date: Some(1676995200000),
+        //     flag: Some(false),
+        //     rise: Decimal::from_f32(0.01f32),
+        //     buy: Some(-1000),
+        //     fall: Decimal::from_f32(0.01f32),
+        //     sell: Some(-1000)
+        // };
+        // let result = CONTEXT.fund_service.calculate_income(&setting);
+        // let vec = result.unwrap();
+        // for item in vec{
+        //     println!("{}", format!("\n-----{},净值:{},涨幅:{}({}%),{}{}份------", item.date.clone().unwrap(), item.net_worth.clone().unwrap(), item.rise.clone().unwrap(),item.rise_rate.clone().unwrap(),item.trade_type.clone().unwrap(),item.trade_share.clone().unwrap()));
+        //     println!("{}", format!("->结算收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.hold_share.clone().unwrap(), item.hold_value.clone().unwrap(), item.cash_out.clone().unwrap(), item.cost.clone().unwrap(), item.earning_rate.clone().unwrap()));
+        // }
+
 
         //println!("funds_info:{}",get_funds_info());
     }

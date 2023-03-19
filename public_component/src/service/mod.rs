@@ -3,7 +3,7 @@ pub mod fund_service;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 pub use fund_service::*;
-use crate::vo::fund_net_worth_trend_vo::FundDataNetWorthTrendDTO;
+use crate::vo::fund_net_worth_trend_vo::FundDataNetWorthTrendVO;
 
 
 
@@ -11,7 +11,7 @@ lazy_static! {
     /// CONTEXT is all of the service struct
     pub static ref CONTEXT: ServiceContext = ServiceContext::default();
     /// 基金收益
-    pub static ref FUND_GAINS: Mutex<Vec<FundDataNetWorthTrendDTO>> = Mutex::new(Vec::new());
+    pub static ref FUND_GAINS: Mutex<Vec<FundDataNetWorthTrendVO>> = Mutex::new(Vec::new());
 }
 
 

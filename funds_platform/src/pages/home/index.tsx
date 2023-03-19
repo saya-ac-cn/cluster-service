@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import { Descriptions,Spin,Button, DatePicker, Form, Input ,Radio,notification } from 'antd';
+import { Descriptions,Spin,Button, DatePicker, Form, Input ,Radio,notification,InputNumber } from 'antd';
 import { CheckOutlined,SearchOutlined,FileExcelOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import * as dayjs from 'dayjs'
@@ -14,7 +14,7 @@ const { RangePicker } = DatePicker;
 const Home = () => {
 
     const [whereForm] = Form.useForm();
-    const [where, setWhere] = useState({fund_code:'',start_date:null,end_date:null,flag:true,rise:1,buy:1000,fall:1,sell:1000});
+    const [where, setWhere] = useState({fund_code:'',init_share:0,init_net_worth:1.0,start_date:null,end_date:null,flag:true,rise:1,buy:1000,fall:1,sell:1000});
     const [calculateType,setCalculateType] = useState("%")
     const [loading, setLoading] = useState(false);
     const [fundInfo, setFundInfo] = useState({fundcode:null,name:null,jzrq:null,dwjz:null,gsz:null,gszzl:0,gztime:null,start_date:null,end_date:null});
@@ -23,108 +23,96 @@ const Home = () => {
     const [excelLoading, setExcelLoading] = useState(false);
     const [result, setResult] = useState([
         {
-            cash_out: "0",
-            cost: "2225.000",
-            date: "2023-02-13",
-            earning_rate: 0.00000,
-            hold_share: 1000,
-            hold_value: "2225.000",
-            net_worth: "2.225",
-            rise: "0.03396",
-            rise_rate: 1.55,
-            trade_share: 1000,
-            trade_type: "买入"
-        },
-        {
-            cash_out: "0",
-            cost: "2225.000",
-            date: "2023-02-14",
-            earning_rate: -0.22472,
-            hold_share: 1000,
-            hold_value: "2220.00",
-            net_worth: "2.22",
-            rise: "-0.00489",
-            rise_rate: -0.22,
-            trade_share: 0,
-            trade_type: "赎回"
-        },
-        {
-            cash_out: "0",
-            cost: "2225.000",
-            date: "2023-02-15",
-            earning_rate: -0.22472,
-            hold_share: 1000,
-            hold_value: "2220.00",
-            net_worth: "2.22",
-            rise: "0.00000",
-            rise_rate: 0,
-            trade_share: 0,
-            trade_type: "赎回"
-        },
-        {
-            cash_out: "0",
-            cost: "2225.000",
-            date: "2023-02-16",
-            earning_rate: -0.71910,
-            hold_share: 1000,
-            hold_value: "2209.000",
-            net_worth: "2.209",
-            rise: "-0.01110",
-            rise_rate: -0.5,
-            trade_share: 0,
-            trade_type: "赎回"
-        },
-        {
-            cash_out: "0",
-            cost: "2225.000",
-            date: "2023-02-17",
-            earning_rate: -0.98876,
-            hold_share: 1000,
-            hold_value: "2203.000",
-            net_worth: "2.203",
-            rise: "-0.00596",
-            rise_rate: -0.27,
-            trade_share: 0,
-            trade_type: "赎回"
-        },
-        {
-            cash_out: "0",
-            cost: "6731.000",
-            date: "2023-02-20",
-            earning_rate: 0.41599,
-            hold_share: 3000,
-            hold_value: "6759.000",
-            net_worth: "2.253",
-            rise: "0.05001",
-            rise_rate: 2.27,
-            trade_share: 2000,
-            trade_type: "买入"
-        },
-        {
-            cash_out: "2222.000",
-            cost: "6731.000",
-            date: "2023-02-21",
-            earning_rate: -0.96568,
-            hold_share: 2000,
-            hold_value: "4444.000",
-            net_worth: "2.222",
-            rise: "-0.03086",
-            rise_rate: -1.37,
-            trade_share: 1000,
-            trade_type: "赎回"
-        },
-        {
-            cash_out: "2222.000",
-            cost: "28727.000",
-            date: "2023-02-22",
-            earning_rate: 2.09211,
-            hold_share: 11000,
-            hold_value: "27106.000",
-            net_worth: "2.444",
-            rise: "0.22198",
-            rise_rate: 9.99,
-            trade_share: 9000,
-            trade_type: "买入"
+            "cash_out": "2225.000",
+            "cost": "2000",
+            "date": "2023-02-13",
+            "earning_rate": 122.5,
+            "hold_share": 1000,
+            "hold_value": "2225.000",
+            "net_worth": "2.225",
+            "rise": "0.03396",
+            "rise_rate": 1.55,
+            "sell": "4450.000",
+            "trade_share": 1000,
+            "trade_type": "赎回"
+        }, {
+            "cash_out": "2225.000",
+            "cost": "2000",
+            "date": "2023-02-14",
+            "earning_rate": 122.25,
+            "hold_share": 1000,
+            "hold_value": "2220.00",
+            "net_worth": "2.22",
+            "rise": "-0.00489",
+            "rise_rate": -0.22,
+            "sell": "4445.000",
+            "trade_share": 0,
+            "trade_type": "-"
+        }, {
+            "cash_out": "2225.000",
+            "cost": "2000",
+            "date": "2023-02-15",
+            "earning_rate": 122.25,
+            "hold_share": 1000,
+            "hold_value": "2220.00",
+            "net_worth": "2.22",
+            "rise": "0.00000",
+            "rise_rate": 0,
+            "sell": "4445.000",
+            "trade_share": 0,
+            "trade_type": "-"
+        }, {
+            "cash_out": "2225.000",
+            "cost": "2000",
+            "date": "2023-02-16",
+            "earning_rate": 121.7,
+            "hold_share": 1000,
+            "hold_value": "2209.000",
+            "net_worth": "2.209",
+            "rise": "-0.01110",
+            "rise_rate": -0.5,
+            "sell": "4434.000",
+            "trade_share": 0,
+            "trade_type": "-"
+        }, {
+            "cash_out": "2225.000",
+            "cost": "2000",
+            "date": "2023-02-17",
+            "earning_rate": 121.4,
+            "hold_share": 1000,
+            "hold_value": "2203.000",
+            "net_worth": "2.203",
+            "rise": "-0.00596",
+            "rise_rate": -0.27,
+            "sell": "4428.000",
+            "trade_share": 0,
+            "trade_type": "-"
+        }, {
+            "cash_out": "4478.000",
+            "cost": "2000",
+            "date": "2023-02-20",
+            "earning_rate": 123.9,
+            "hold_share": 0,
+            "hold_value": "0",
+            "net_worth": "2.253",
+            "rise": "0.05001",
+            "rise_rate": 2.27,
+            "sell": "4478.000",
+            "trade_share": 1000,
+            "trade_type": "赎回"
+        }, {
+            "cash_out": "4478.000",
+            "cost": "4222.000",
+            "date": "2023-02-21",
+            "earning_rate": 58.69256,
+            "hold_share": 1000,
+            "hold_value": "2222.000",
+            "net_worth": "2.222",
+            "rise": "-0.03086",
+            "rise_rate": -1.37,
+            "sell": "6700.000",
+            "trade_share": 1000,
+            "trade_type": "买入"
         }
     ]);
     const [data, setData] = useState([]);
@@ -173,22 +161,26 @@ const Home = () => {
             openNotification('请先查询基金详细信息~');
             return
         }
-        whereForm.validateFields(['flag','buy','fall','rise','sell','date']).then((values) => {
+        whereForm.validateFields(['flag','buy','fall','rise','sell','date','init_share','init_net_worth']).then((values) => {
             setCalculateLoading(true)
             setLoading(true)
             const param = {
                 fund_code:fundcode,
-                start_date:values.date[0].unix()*1000,
-                end_date:values.date[1].unix()*1000,
-                buy:values.buy,
-                fall:values.fall,
+                init_share:parseInt(values.init_share),
+                init_net_worth:parseFloat(values.init_net_worth),
+                start_date:dateTimeToDate(values.date[0])*1000,
+                end_date:dateTimeToDate(values.date[1])*1000,
+                buy:parseInt(values.buy),
+                fall:parseFloat(values.fall),
                 flag:values.flag,
-                rise:values.rise,
-                sell:values.sell
+                rise:parseFloat(values.rise),
+                sell:parseInt(values.sell)
             }
+            //console.log(param)
             invoke('fund_calculate',{param:param}).then((message) => {
                 const data = []
                 const warehouse = {};
+                //console.log(JSON.stringify(message))
                 for (const index in message) {
                     const item = message[index]
                     data.push({date:item.date,value:item.rise_rate,category:'净值涨幅'})
@@ -197,7 +189,6 @@ const Home = () => {
                 }
                 setWarehouse(warehouse);
                 setData(data)
-
                 setCalculateLoading(false)
                 setLoading(false)
             }).catch((error) => {
@@ -212,7 +203,7 @@ const Home = () => {
     };
 
     /**
-     * 导出激素哑巴结果
+     * 导出计算结果
      */
     const onOutExcel = async () => {
         const {fundcode,start_date,end_date } = fundInfo;
@@ -231,18 +222,20 @@ const Home = () => {
             return
         }
 
-        whereForm.validateFields(['flag','buy','fall','rise','sell','date']).then((values) => {
+        whereForm.validateFields(['flag','buy','fall','rise','sell','date','init_share','init_net_worth']).then((values) => {
             setCalculateLoading(true)
             setExcelLoading(true)
             const param = {
                 fund_code:fundcode,
-                start_date:values.date[0].unix()*1000,
-                end_date:values.date[1].unix()*1000,
-                buy:values.buy,
-                fall:values.fall,
+                start_date:dateTimeToDate(values.date[0])*1000,
+                end_date:dateTimeToDate(values.date[1])*1000,
+                init_share:parseInt(values.init_share),
+                init_net_worth:parseFloat(values.init_net_worth),
+                buy:parseInt(values.buy),
+                fall:parseFloat(values.fall),
                 flag:values.flag,
-                rise:values.rise,
-                sell:values.sell,
+                rise:parseFloat(values.rise),
+                sell:parseInt(values.sell),
                 save_path:save_path
             }
             invoke('out_excel',{param:param}).then((message) => {
@@ -353,7 +346,7 @@ const Home = () => {
                     </div>
                     <div class="custom-tooltip-line">
                        <div><span>持有总市值：</span><span></span></div>
-                       <div><span>已赎回：</span><span></span></div>
+                       <div><span>总收益：</span><span></span></div>
                     </div>
                     <div class="custom-tooltip-line">
                        <div><span>总成本价：</span><span></span></div>
@@ -364,24 +357,24 @@ const Home = () => {
                  return `<div class="custom-tooltip">
                     <div class ="custom-tooltip-title">${date}</div>
                     <div class="custom-tooltip-line">
-                       <div><span>净值：</span><span>${item ? item.net_worth : null}</span></div>
-                       <div><span>净值涨幅：</span><span>${item ? item.rise_rate : null}%</span></div>
+                       <div><span>净值：</span><span>${item.net_worth}</span></div>
+                       <div><span>净值涨幅：</span><span>${item.rise_rate}%</span></div>
                     </div>
                     <div class="custom-tooltip-line">
-                       <div><span>涨幅：</span><span>${item ? item.rise : null}</span></div>
-                       <div><span>交易类型：</span><span>${item ? item.trade_type : null}</span></div>
+                       <div><span>涨幅：</span><span>${item.rise}</span></div>
+                       <div><span>交易类型：</span><span>${item.trade_type}</span></div>
                     </div>
                     <div class="custom-tooltip-line">
-                       <div><span>交易份额：</span><span>${item ? item.trade_share : null}</span></div>
-                       <div><span>持有份额：</span><span>${item ? item.hold_share : null}</span></div>
+                       <div><span>交易份额：</span><span>${item.trade_share}</span></div>
+                       <div><span>持有份额：</span><span>${item.hold_share}</span></div>
                     </div>
                     <div class="custom-tooltip-line">
-                       <div><span>持有总市值：</span><span>${item ? item.hold_value : null}</span></div>
-                       <div><span>已赎回：</span><span>${item ? item.cash_out : null}</span></div>
+                       <div><span>持有总市值：</span><span>${item.hold_value}</span></div>
+                       <div><span>总收益：</span>${item.sell >= 0 ? `<span style="color:#cf1322">${item.sell}</span>`:`<span style="color: #3f8600">${item.sell}</span>`}</div>
                     </div>
                     <div class="custom-tooltip-line">
                        <div><span>总成本价：</span><span>${item ? item.cost : null}</span></div>
-                       <div><span>累计收益：</span><span>${item ? item.earning_rate : null}%</span></div>
+                       <div><span>累计收益：</span>${item.earning_rate >= 0 ? `<span style="color:#cf1322">${item.earning_rate}%</span>`:`<span style="color: #3f8600">${item.earning_rate}%</span>`}</div>
                     </div>
                 </div>`
                 }
@@ -396,6 +389,10 @@ const Home = () => {
             description:message
         })
     };
+
+    const dateTimeToDate = (val:any) => {
+        return dayjs(val.format('YYYY-MM-DD')+' 00:00:00','YYYY-MM-DD HH:mm:ss').unix()
+    }
 
     return (
         <div className="funds-div">
@@ -439,7 +436,13 @@ const Home = () => {
                         <div className="funds-container">
                             <div className="fund-setting">
                                 <div className="fund-form-label">交易设置</div>
-                                <Form name="fund-form" form={whereForm} labelCol={{ span: 5 }}  wrapperCol={{ span: 16 }}>
+                                <Form name="fund-form" form={whereForm} labelCol={{ span: 6 }}  wrapperCol={{ span: 16 }}>
+                                    <Form.Item name="init_share" label="初始份额" className="init-setting-where" initialValue={where.init_share} rules={[{ required: true,message: '请输入初始份额' }]}>
+                                        <InputNumber min={0} max={999999} step={1} precision={0}/>
+                                    </Form.Item>
+                                    <Form.Item name="init_net_worth" label="初始市值" className="init-setting-where" initialValue={where.init_net_worth} rules={[{ required: true,message: '请输入初始市值' }]}>
+                                        <InputNumber min={0} max={999999} precision={5}/>
+                                    </Form.Item>
                                     <Form.Item name="flag" initialValue={where.flag} label="涨跌类型" rules={[{ required: true, message: '买卖参数不能为空!' }]}>
                                         <Radio.Group>
                                             <Radio.Button onChange={switchType} value={true}>%</Radio.Button>
@@ -447,22 +450,30 @@ const Home = () => {
                                         </Radio.Group>
                                     </Form.Item>
                                     <Form.Item label="每上涨" className="fund-setting-where-div" style={{ marginBottom: 0 }}>
-                                        <Form.Item name="rise" initialValue={where.rise}  rules={[{ required: true,message: '请输入上涨幅度'}]} className="fund-setting-where">
-                                            <Input placeholder="1" className='fund-shares'/>
+                                        <Form.Item name="rise" initialValue={where.rise}  rules={[{ required: true,message: '请输入上涨幅度'}]} className="fund-setting-where" getValueFromEvent={(event) => {
+                                            return event.target.value.replace(/[^\d+(\.\d+)?$]/g,'');
+                                        }}>
+                                            <Input placeholder="1" maxLength={6} className='fund-shares'/>
                                         </Form.Item>
                                         <span>{calculateType}，卖出：</span>
-                                        <Form.Item name="buy" initialValue={where.sell} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where">
-                                            <Input placeholder="1" className='fund-shares'/>
+                                        <Form.Item name="sell" initialValue={where.sell} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where" getValueFromEvent={(event) => {
+                                            return event.target.value.replace(/(?!^)-|[^\d-]/g, '');
+                                        }}>
+                                            <Input placeholder="1" maxLength={6} className='fund-shares'/>
                                         </Form.Item>
                                         <span>份</span>
                                     </Form.Item>
                                     <Form.Item label="每下跌" className="fund-setting-where-div" style={{ marginBottom: 0 }}>
-                                        <Form.Item name="fall" initialValue={where.fall} rules={[{ required: true,message: '请输入下跌幅度'}]} className="fund-setting-where">
-                                            <Input placeholder="1" className='fund-shares'/>
+                                        <Form.Item name="fall" initialValue={where.fall} rules={[{ required: true,message: '请输入下跌幅度'}]} className="fund-setting-where" getValueFromEvent={(event) => {
+                                            return event.target.value.replace(/[^\d+(\.\d+)?$]/g,'');
+                                        }}>
+                                            <Input placeholder="1" maxLength={6} className='fund-shares'/>
                                         </Form.Item>
                                         <span>{calculateType}，买入：</span>
-                                        <Form.Item name="sell" initialValue={where.buy} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where">
-                                            <Input placeholder="1" className='fund-shares'/>
+                                        <Form.Item name="buy" initialValue={where.buy} rules={[{ required: true,message: '请输入交易份额' }]} className="fund-setting-where" getValueFromEvent={(event) => {
+                                            return event.target.value.replace(/(?!^)-|[^\d-]/g, '');
+                                        }}>
+                                            <Input placeholder="1" maxLength={6} className='fund-shares'/>
                                         </Form.Item>
                                         <span>份</span>
                                     </Form.Item>

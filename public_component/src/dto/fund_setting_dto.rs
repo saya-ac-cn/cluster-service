@@ -11,5 +11,5 @@ pub struct FundSettingDTO {
     pub rise:Option<Decimal>,//涨 必须为正数
     pub buy:Option<i32>,// 买入量
     pub fall:Option<Decimal>,//跌 必须为正数
-    pub sell:Option<i32>,// 买入量
+    pub sell:Option<i32>,// 卖出入量
 }

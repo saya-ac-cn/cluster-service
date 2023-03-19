@@ -102,7 +102,7 @@ impl FundService {
         if respones.eq("jsonpgz();") {
            return Err(Error::from("未查询到基金历史数据，请稍后再试..."));
         }
-        //let respones = fs::read_to_string(Path::new("./src/service/funds.txt"))?;
+        // let respones = fs::read_to_string(Path::new("./src/service/funds.txt"))?;
 
         // Data_netWorthTrend ;/*累计净值走势*/
         let start_bytes = respones.find("Data_netWorthTrend =").unwrap_or(0);
@@ -125,6 +125,9 @@ impl FundService {
         }
         let array: &Vec<Value> = array_wrap.unwrap();
         let aa: Vec<FundDataNetWorthTrendVO> = Vec::new();
+        // 在查询基金后，将上次的计算结果清空
+        let mut vec = FUND_GAINS.lock().unwrap();
+        vec.clear();
         for item in array {
             let timestamp = item["x"].as_i64().unwrap();
             let naive = NaiveDateTime::from_timestamp_millis(timestamp).unwrap();
@@ -145,7 +148,7 @@ impl FundService {
                 date: Some(date.to_string()),
                 y: Some(Decimal::from_f64(item["y"].as_f64().unwrap()).unwrap()),
             };
-            let mut vec = FUND_GAINS.lock().unwrap();
+            //let mut vec = FUND_GAINS.lock().unwrap();
             vec.push(_item);
         }
         return Err(Error::from("累计净值走势数据转换失败，请稍后再试..."));
@@ -167,7 +170,7 @@ impl FundService {
         let mut hold_detail: HashMap<Decimal, u64> = HashMap::new();
         // 总套现额
         let mut cash_out: Decimal = Decimal::from(0);
-        // 持有份额，用于校验在卖出时，是否充足
+        // 持有份额（买入、卖出需要更新），用于校验在卖出时，判断是否充足，以及时刻计算总市值（持有份额*当前单位市值）
         let mut hold: u64 = 0;
         // 本次实际实际交易份额（在持有不足的情况下，卖出只能全部卖出）
         let mut real_trade_share: u64 = 0;
@@ -181,6 +184,12 @@ impl FundService {
         let buy: i32 = arg.buy.clone().unwrap();
         let fall: Decimal = arg.fall.clone().unwrap();
         let sell: i32 = arg.sell.clone().unwrap();
+        // 初始持有信息
+
+        let init_share:u64 = arg.init_share.clone().unwrap();
+        let init_net_worth: Decimal = arg.init_net_worth.clone().unwrap();
+        hold = self.buy_funds(init_share, &init_net_worth, &mut hold_detail, hold);
+
         for item in vec.to_vec() {
             let _current:i64 = item.x.clone().unwrap();
             if _current < start_date || _current > end_date {
@@ -210,8 +219,10 @@ impl FundService {
                 }
 
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
-                let (_cost, _sell) = self.compute_earnings(&hold_detail, &net_worth);
+                let (_cost, _sell) = self.compute_earnings(&hold_detail, &net_worth,hold);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
+                // 当前收益 = 已套现额+持有总市值
+                let income:Decimal =  _sell+cash_out;
                 let _result = FundIncomeVO{
                     date: item.date.clone(),
                     net_worth: Some(net_worth.clone()),
@@ -220,10 +231,11 @@ impl FundService {
                     trade_type: Some(trade_type),
                     trade_share: Some(real_trade_share),
                     hold_share: Some(hold),
-                    hold_value: Some(_sell - cash_out),
+                    hold_value: Some(_sell),
                     cash_out: Some(cash_out),
                     cost: Some(_cost),
-                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap() })
+                    sell: Some(income),
+                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((income - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap() })
                 };
                 result.push(_result);
                 continue;
@@ -242,8 +254,10 @@ impl FundService {
                     (hold, cash_out,real_trade_share) = self.sell_funds(unit, &net_worth, cash_out.clone(), hold);
                     trade_type = if 0 == real_trade_share {String::from("-")}else{String::from("赎回")};
                 }
-                let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
+                let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth,hold);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
+                // 当前收益 = 已套现额+持有总市值
+                let income:Decimal =  _sell+cash_out;
                 let _result = FundIncomeVO{
                     date: item.date.clone(),
                     net_worth: Some(net_worth.clone()),
@@ -252,17 +266,20 @@ impl FundService {
                     trade_type: Some(trade_type),
                     trade_share: Some(real_trade_share),
                     hold_share: Some(hold),
-                    hold_value: Some(_sell - cash_out),
+                    hold_value: Some(_sell),
                     cash_out: Some(cash_out),
                     cost: Some(_cost),
-                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap() })
+                    sell: Some(income),
+                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((income - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap() })
                 };
                 result.push(_result);
                 continue;
             }
-            let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
+            let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth,hold);
             //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
             // 今日无交易
+            // 当前收益 = 已套现额+持有总市值
+            let income:Decimal =  _sell+cash_out;
             let _result = FundIncomeVO{
                 date: item.date.clone(),
                 net_worth: Some(net_worth.clone()),
@@ -271,10 +288,11 @@ impl FundService {
                 trade_type: Some(String::from("-")),
                 trade_share: Some(real_trade_share),
                 hold_share: Some(hold),
-                hold_value: Some(_sell - cash_out),
+                hold_value: Some(_sell),
                 cash_out: Some(cash_out),
                 cost: Some(_cost),
-                earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap() })
+                sell: Some(income),
+                earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((income - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap() })
             };
             result.push(_result);
         }
@@ -288,7 +306,7 @@ impl FundService {
         let mut hold_detail: HashMap<Decimal, u64> = HashMap::new();
         // 总套现额
         let mut cash_out: Decimal = Decimal::from(0);
-        // 持有份额，用于校验在卖出时，是否充足
+        // 持有份额（买入、卖出需要更新），用于校验在卖出时，判断是否充足，以及时刻计算总市值（持有份额*当前单位市值）
         let mut hold: u64 = 0;
         // 本次实际实际交易份额（在持有不足的情况下，卖出只能全部卖出）
         let mut real_trade_share: u64 = 0;
@@ -302,6 +320,11 @@ impl FundService {
         let buy: i32 = arg.buy.clone().unwrap();
         let fall: Decimal = arg.fall.clone().unwrap();
         let sell: i32 = arg.sell.clone().unwrap();
+
+        // 初始持有信息
+        let init_share: u64 = arg.init_share.clone().unwrap();
+        let init_net_worth: Decimal = arg.init_net_worth.clone().unwrap();
+        hold = self.buy_funds(init_share, &init_net_worth, &mut hold_detail, hold);
         for item in vec.to_vec() {
             let _current:i64 = item.x.clone().unwrap();
             if _current < start_date || _current > end_date {
@@ -331,8 +354,10 @@ impl FundService {
                 }
 
                 // 计算在以前买入 到现在的收益（暂时不考虑手续费）
-                let (_cost, _sell) = self.compute_earnings(&hold_detail, &net_worth);
+                let (_cost, _sell) = self.compute_earnings(&hold_detail, &net_worth,hold);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
+                // 当前收益 = 已套现额+持有总市值
+                let income:Decimal =  _sell+cash_out;
                 let _result = FundIncomeVO{
                     date: item.date.clone(),
                     net_worth: Some(net_worth.clone()),
@@ -341,10 +366,11 @@ impl FundService {
                     trade_type: Some(trade_type),
                     trade_share: Some(real_trade_share),
                     hold_share: Some(hold),
-                    hold_value: Some(_sell - cash_out),
+                    hold_value: Some(_sell),
                     cash_out: Some(cash_out),
                     cost: Some(_cost),
-                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap()})
+                    sell: Some(income),
+                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((income - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap()})
                 };
                 result.push(_result);
                 continue;
@@ -364,8 +390,10 @@ impl FundService {
                     trade_type = if 0 == real_trade_share {String::from("-")}else{String::from("赎回")};
                 }
 
-                let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
+                let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth,hold);
                 //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
+                // 当前收益 = 已套现额+持有总市值
+                let income:Decimal =  _sell+cash_out;
                 let _result = FundIncomeVO{
                     date: item.date.clone(),
                     net_worth: Some(net_worth.clone()),
@@ -374,17 +402,20 @@ impl FundService {
                     trade_type: Some(trade_type),
                     trade_share: Some(real_trade_share),
                     hold_share: Some(hold),
-                    hold_value: Some(_sell - cash_out),
+                    hold_value: Some(_sell),
                     cash_out: Some(cash_out),
                     cost: Some(_cost),
-                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap()})
+                    sell: Some(income),
+                    earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((income - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap()})
                 };
                 result.push(_result);
                 continue;
             }
-            let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth);
+            let (_cost, _sell) = self.compute_earnings(&mut hold_detail, &net_worth,hold);
             //println!("{}", format!("->结算[{}]收益,持有份额:{},持有总市值:{},已套现额:{},总成本价:{},收益率{}%------", item.date.clone().unwrap(), hold, (_sell - cash_out), cash_out, _cost, if _cost.is_zero() { Decimal::zero() } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5) }));
             // 今日无交易
+            // 当前收益 = 已套现额+持有总市值
+            let income:Decimal =  _sell+cash_out;
             let _result = FundIncomeVO{
                 date: item.date.clone(),
                 net_worth: Some(net_worth.clone()),
@@ -393,10 +424,11 @@ impl FundService {
                 trade_type: Some(String::from("-")),
                 trade_share: Some(real_trade_share),
                 hold_share: Some(hold),
-                hold_value: Some(_sell - cash_out),
+                hold_value: Some(_sell),
                 cash_out: Some(cash_out),
                 cost: Some(_cost),
-                earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((_sell - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap()})
+                sell: Some(income),
+                earning_rate: Some(if _cost.is_zero() { 0.0 } else { ((income - _cost) / _cost * Decimal::from(100)).round_dp(5).to_f64().unwrap()})
             };
             result.push(_result);
         }
@@ -418,7 +450,7 @@ impl FundService {
     /// net_worth 当日净值
     /// hold_detail 持有明细
     /// hold 持有总份额
-    /// 返回时，原持有+最新买入的
+    /// 返回时，计算后的持有份额（原持有+最新买入的）
     pub fn buy_funds(&self, buy: u64, net_worth: &Decimal, hold_detail: &mut HashMap<Decimal, u64>, hold: u64) -> u64 {
         if 0 == buy{
             return hold;
@@ -455,16 +487,15 @@ impl FundService {
     }
 
     /// 计算持仓收益
-    pub fn compute_earnings(&self, map: &HashMap<Decimal, u64>, net_worth: &Decimal) -> (Decimal, Decimal) {
+    pub fn compute_earnings(&self, map: &HashMap<Decimal, u64>, net_worth: &Decimal,hold:u64) -> (Decimal, Decimal) {
         // 持有总成本价
         let mut cost: Decimal = Decimal::from(0);
         // 持有总市值
-        let mut sell: Decimal = Decimal::from(0);
+        let sell: Decimal = (Decimal::from(hold)).mul(net_worth);
         for (key, value) in map.iter() {
             // 持有份额
             let number: Decimal = Decimal::from(*value);
             cost = cost.add(number.mul(key));
-            sell = sell.add(number.mul(net_worth));
         }
         (cost, sell)
     }

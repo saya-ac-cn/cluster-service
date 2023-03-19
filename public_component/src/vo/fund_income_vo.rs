@@ -14,9 +14,10 @@ pub struct FundIncomeVO {
     pub hold_value:Option<Decimal>,// 持有总市值
     pub cash_out:Option<Decimal>,// 已套现额
     pub cost:Option<Decimal>,// 总成本价
-    pub sell:Option<Decimal>,// 已套现额+持有总市值
     pub earning_rate:Option<f64>,// 收益率
 }
+
+
 
 
 
