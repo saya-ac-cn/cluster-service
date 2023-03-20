@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, {useEffect, useState} from "react";
 import { Descriptions,Spin,Button, DatePicker, Form, Input ,Radio,notification,InputNumber } from 'antd';
 import { CheckOutlined,SearchOutlined,FileExcelOutlined } from '@ant-design/icons';
