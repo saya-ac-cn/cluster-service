@@ -1,15 +1,12 @@
-pub mod dict;
 pub mod jwt;
-pub mod res;
-pub mod role;
 pub mod sign_in;
 pub mod user;
+pub mod log;
 
-pub use dict::*;
-pub use jwt::*;
-pub use res::*;
-pub use role::*;
-pub use sign_in::*;
+pub use self::jwt::*;
+pub use self::sign_in::*;
+pub use self::user::*;
+pub use self::log::*;
 
 use crate::error::Error;
 use actix_web::HttpResponse;

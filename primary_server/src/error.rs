@@ -18,7 +18,7 @@ pub enum Error {
 }
 
 impl Display for Error {
-    // Intellij Rust does not understand that [non_exhaustive] applies only for downstream crates
+    // IntellijRust does not understand that [non_exhaustive] applies only for downstream crates
     // noinspection RsMatchCheck
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

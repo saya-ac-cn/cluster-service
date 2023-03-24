@@ -1,117 +1,28 @@
-use primary_server::controller::{
-    img_controller, sys_dict_controller, sys_user_controller,
-};
-use primary_server::middleware::auth_actix::Auth;
 use primary_server::service::CONTEXT;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-
-async fn index() -> impl Responder {
-    HttpResponse::Ok()
-        .insert_header(("Access-Control-Allow-Origin", "*"))
-        .insert_header(("Cache-Control", "no-cache"))
-        .body("[primary_server] Hello !")
-}
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, HttpRequest};
+use primary_server::controller::sys_user_controller;
+use primary_server::middleware::auth_actix::Auth;
 
 /// use tokio,because Rbatis specifies the runtime-tokio
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    //日志追加器
+    //log
     primary_server::config::log::init_log();
-    //连接数据库
+    //database
     CONTEXT.init_pool().await;
-    //路由
+    //router
     HttpServer::new(|| {
         App::new()
             .wrap(Auth {})
-            .route("/", web::get().to(index))
-            .route("/backend/login", web::post().to(sys_user_controller::login))
-            // .route(
-            //     "/admin/sys_user_info",
-            //     web::post().to(sys_user_controller::info),
-            // )
-            // .route(
-            //     "/admin/sys_user_detail",
-            //     web::post().to(sys_user_controller::detail),
-            // )
-            // .route(
-            //     "/admin/sys_user_add",
-            //     web::post().to(sys_user_controller::add),
-            // )
-            // .route(
-            //     "/admin/sys_user_page",
-            //     web::post().to(sys_user_controller::page),
-            // )
-            // .route(
-            //     "/admin/sys_user_remove",
-            //     web::post().to(sys_user_controller::remove),
-            // )
-            // .route(
-            //     "/admin/sys_user_update",
-            //     web::post().to(sys_user_controller::update),
-            // )
-            // .route(
-            //     "/admin/sys_res_update",
-            //     web::post().to(sys_res_controller::update),
-            // )
-            // .route(
-            //     "/admin/sys_res_remove",
-            //     web::post().to(sys_res_controller::remove),
-            // )
-            // .route(
-            //     "/admin/sys_res_add",
-            //     web::post().to(sys_res_controller::add),
-            // )
-            // .route(
-            //     "/admin/sys_res_page",
-            //     web::post().to(sys_res_controller::page),
-            // )
-            // .route(
-            //     "/admin/sys_res_all",
-            //     web::post().to(sys_res_controller::all),
-            // )
-            // .route(
-            //     "/admin/sys_res_layer_top",
-            //     web::post().to(sys_res_controller::layer_top),
-            // )
-            // .route(
-            //     "/admin/sys_role_add",
-            //     web::post().to(sys_role_controller::add),
-            // )
-            // .route(
-            //     "/admin/sys_role_update",
-            //     web::post().to(sys_role_controller::update),
-            // )
-            // .route(
-            //     "/admin/sys_role_delete",
-            //     web::post().to(sys_role_controller::remove),
-            // )
-            // .route(
-            //     "/admin/sys_role_page",
-            //     web::post().to(sys_role_controller::page),
-            // )
-            // .route(
-            //     "/admin/sys_role_layer_top",
-            //     web::post().to(sys_role_controller::layer_top),
-            // )
-            // .route("/admin/captcha", web::get().to(img_controller::captcha))
-            // .route(
-            //     "/admin/sys_dict_add",
-            //     web::post().to(sys_dict_controller::add),
-            // )
-            // .route(
-            //     "/admin/sys_dict_update",
-            //     web::post().to(sys_dict_controller::update),
-            // )
-            // .route(
-            //     "/admin/sys_dict_remove",
-            //     web::post().to(sys_dict_controller::remove),
-            // )
-            // .route(
-            //     "/admin/sys_dict_page",
-            //     web::post().to(sys_dict_controller::page),
-            // )
+            // 登录登出接口单独处理（因为都不在已有的分组中）
+            .route("/backend/login", web::post().to(sys_user_controller::login),)
+            //.route("/backend/logout", web::post().to(system_controller::logout),)
+            // 映射静态资源目录
+            //.service(fs::Files::new("/warehouse", &CONTEXT.config.data_dir))
     })
     .bind(&CONTEXT.config.server_url)?
     .run()
     .await
 }
+
+

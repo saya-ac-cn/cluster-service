@@ -1,35 +1,76 @@
-use crate::domain::table::{LoginCheckEnum, SysUser};
-use crate::domain::vo::SysRoleVO;
-use rbatis::rbdc::datetime::FastDateTime;
 use serde::{Deserialize, Serialize};
+use crate::domain::table::User;
+
+/// 用户展示层
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UserVO {
+    /// 用户名
+    pub account: Option<String>,
+    /// 姓名
+    pub name: Option<String>,
+    /// 密码
+    pub password: Option<String>,
+    /// 性别
+    pub sex: Option<String>,
+    /// qq号
+    pub qq: Option<String>,
+    /// 邮箱
+    pub email: Option<String>,
+    /// 电话号码
+    pub phone: Option<String>,
+    /// 生日
+    pub birthday: Option<String>,
+    /// 故乡
+    pub hometown: Option<String>,
+    /// 签名
+    pub autograph: Option<String>,
+    /// 头像地址
+    pub logo: Option<String>,
+    /// 设置的背景
+    pub background: Option<u64>,
+    /// 所属组织
+    pub organize_id: Option<u64>,
+    /// 是否锁定(1正常，2锁定)
+    pub state: Option<u32>,
+    /// 创建时间
+    pub create_time: Option<String>,
+    /// 修改时间
+    pub update_time: Option<String>,
+    /// 壁纸url
+    pub background_url: Option<String>
+}
+//impl_field_name_method!(UserVO{account,name});
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SysUserVO {
-    pub id: Option<String>,
+pub struct UserOwnOrganizeVO {
+    /// 用户名
     pub account: Option<String>,
-    pub password: Option<String>,
-    pub name: Option<String>,
-    pub login_check: Option<LoginCheckEnum>,
-    pub state: Option<i32>,
-    pub del: Option<i32>,
-    pub create_date: Option<FastDateTime>,
-
-    pub role: Option<SysRoleVO>,
+    /// 姓名
+    pub name: Option<String>
 }
 
-impl From<SysUser> for SysUserVO {
-    fn from(arg: SysUser) -> Self {
+
+impl From<User> for UserVO {
+    fn from(arg: User) -> Self {
         Self {
-            id: arg.id,
             account: arg.account,
+            name: arg.name,
             //屏蔽密码
             password: None,
-            name: arg.name,
-            login_check: arg.login_check,
+            sex: arg.sex,
+            qq: arg.qq,
+            email: arg.email,
+            phone: arg.phone,
+            birthday: arg.birthday,
+            hometown: arg.hometown,
+            autograph: arg.autograph,
+            logo: arg.logo,
+            background: arg.background,
+            organize_id: arg.organize_id,
             state: arg.state,
-            del: arg.del,
-            create_date: arg.create_date,
-            role: None,
+            background_url:None,
+            create_time: arg.create_time,
+            update_time: arg.update_time,
         }
     }
 }

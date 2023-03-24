@@ -1,80 +1,102 @@
-use crate::domain::table::LoginCheckEnum;
-use rbatis::rbdc::datetime::FastDateTime;
-///Permission Resource Table
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct SysRes {
-    pub id: Option<String>,
-    //父id(可空)
-    pub parent_id: Option<String>,
-    pub name: Option<String>,
-    //权限
-    pub permission: Option<String>,
-    //前端-菜单路径
-    pub path: Option<String>,
-    pub del: Option<i32>,
-    pub create_date: Option<FastDateTime>,
-}
+/// 主数据库
+use serde::{Deserialize, Serialize};
 
-///RoleTable
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct SysRole {
-    pub id: Option<String>,
-    pub name: Option<String>,
-    //父id(可空)
-    pub parent_id: Option<String>,
-    pub del: Option<i32>,
-    pub create_date: Option<FastDateTime>,
-}
-
-///Role resource relational tables (relational tables do not use logical deletion)
-#[derive(Clone, Debug, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct SysRoleRes {
-    pub id: Option<String>,
-    //角色id
-    pub role_id: Option<String>,
-    //资源id
-    pub res_id: Option<String>,
-    pub create_date: Option<FastDateTime>,
-}
-
-///Background user table
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct SysUser {
-    pub id: Option<String>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct User {
+    /// 用户名
     pub account: Option<String>,
+    /// 姓名
+    pub name: Option<String>,
+    /// 密码
     pub password: Option<String>,
-    pub name: Option<String>,
-    pub login_check: Option<LoginCheckEnum>,
-    pub state: Option<i32>,
-    pub del: Option<i32>,
-    pub create_date: Option<FastDateTime>,
+    /// 性别
+    pub sex: Option<String>,
+    /// qq号
+    pub qq: Option<String>,
+    /// 邮箱
+    pub email: Option<String>,
+    /// 电话号码
+    pub phone: Option<String>,
+    /// 生日
+    pub birthday: Option<String>,
+    /// 故乡
+    pub hometown: Option<String>,
+    /// 签名
+    pub autograph: Option<String>,
+    /// 头像地址
+    pub logo: Option<String>,
+    /// 设置的背景
+    pub background: Option<u64>,
+    /// 所属组织
+    pub organize_id: Option<u64>,
+    /// 是否锁定(1正常，2锁定)
+    pub state: Option<u32>,
+    /// 创建时间
+    pub create_time: Option<String>,
+    /// 修改时间
+    pub update_time: Option<String>,
 }
+//impl_field_name_method!(User{account,name,email,phone,organize_id,state});
 
-///User role relationship tables (relational tables do not use logical deletion)
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct SysUserRole {
-    pub id: Option<String>,
-    //用户id
-    pub user_id: Option<String>,
-    //角色id
-    pub role_id: Option<String>,
-    pub create_date: Option<FastDateTime>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Log{
+    pub id:Option<u64>,
+    pub organize:Option<u64>,
+    pub user:Option<String>,
+    pub category:Option<String>,
+    pub ip:Option<String>,
+    pub city:Option<String>,
+    pub date:Option<String>,
 }
+//impl_field_name_method!(Log{id,user,category,date});
 
-///dictionary table
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct SysDict {
-    pub id: Option<String>,
-    pub name: Option<String>,
-    pub code: Option<String>,
-    pub state: Option<i32>,
-    pub create_date: Option<FastDateTime>,
-}
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct SysTrash {
-    pub id: Option<String>,
-    pub table_name: Option<String>,
-    pub data: Option<String>,
-    pub create_date: Option<FastDateTime>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LogType{
+    pub category:Option<String>,
+    pub detail:Option<String>,
 }
+//impl_field_name_method!(LogType{category});
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Plan{
+    pub id:Option<u64>,
+    pub standard_time:Option<String>,
+    pub cycle:Option<u32>,
+    pub unit:Option<u32>,
+    pub title:Option<String>,
+    pub content:Option<String>,
+    pub next_exec_time:Option<String>,
+    pub organize:Option<u64>,
+    pub user:Option<String>,
+    pub display:Option<u32>,
+    pub create_time: Option<String>,
+    pub update_time: Option<String>,
+}
+//impl_field_name_method!(Plan{id,organize,user,display,standard_time,next_exec_time});
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PlanArchive{
+    pub id:Option<u64>,
+    pub status:Option<u32>,
+    pub title:Option<String>,
+    pub content:Option<String>,
+    pub archive_time:Option<String>,
+    pub organize:Option<u64>,
+    pub user:Option<String>,
+    pub display:Option<u32>,
+    pub create_time: Option<String>,
+    pub update_time: Option<String>,
+}
+//impl_field_name_method!(PlanArchive{id,status,archive_time});
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DbDumpLog{
+    pub id:Option<u64>,
+    pub url:Option<String>,
+    pub archive_date:Option<String>,
+    pub execute_data:Option<String>,
+}
+//impl_field_name_method!(DbDumpLog{id,archive_date});

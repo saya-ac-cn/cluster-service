@@ -1,7 +1,6 @@
-pub mod sys_dict;
-pub mod sys_res;
-pub mod sys_role;
-pub mod sys_role_res;
-pub mod sys_trash;
-pub mod sys_user;
-pub mod sys_user_role;
+pub mod user;
+pub mod log;
+pub mod log_type;
+pub mod plan;
+pub mod plan_archive;
+pub mod db_dump_log;

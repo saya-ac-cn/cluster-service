@@ -6,7 +6,7 @@ use std::time::Duration;
 
 pub fn init_log() {
     //create log dir
-    std::fs::create_dir_all(&CONTEXT.config.log_dir);
+    let _ = std::fs::create_dir_all(&CONTEXT.config.log_dir);
     //init fast log
     let mut cfg = Config::new()
         .level(str_to_log_level(&CONTEXT.config.log_level))
@@ -15,14 +15,14 @@ pub fn init_log() {
             str_to_temp_size(&CONTEXT.config.log_temp_size),
             str_to_rolling(&CONTEXT.config.log_rolling_type),
             choose_packer(&CONTEXT.config.log_pack_compress),
-        ));
+        ).unwrap());
     if CONTEXT.config.debug {
         cfg = cfg.console();
     }
     cfg = cfg.chan_len(CONTEXT.config.log_chan_len);
-    fast_log::init(cfg);
+    let _ = fast_log::init(cfg);
     if CONTEXT.config.debug == false {
-        println!("[abs_admin] release_mode is up! [file_log] open,[console_log] disabled!");
+        println!("[primary_server] release_mode is up! [file_log] open,[console_log] disabled!");
     }
 }
 

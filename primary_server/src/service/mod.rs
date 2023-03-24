@@ -1,18 +1,13 @@
-mod cache_service;
-mod mem_service;
-mod redis_service;
-mod sys_dict_service;
 mod sys_user_service;
+mod redis_service;
+
+use crate::service::sys_user_service::SysUserService;
+use crate::service::redis_service::RedisService;
 
 pub use crate::config::config::ApplicationConfig;
-pub use cache_service::*;
-pub use mem_service::*;
 use once_cell::sync::Lazy;
 use rbatis::rbatis::Rbatis;
-use rbdc_mysql::driver::MysqlDriver;
-pub use redis_service::*;
-pub use sys_dict_service::*;
-pub use sys_user_service::*;
+
 
 /// CONTEXT is all of the service struct
 pub static CONTEXT: Lazy<ServiceContext> = Lazy::new(|| ServiceContext::default());
@@ -27,24 +22,28 @@ macro_rules! pool {
 pub struct ServiceContext {
     pub config: ApplicationConfig,
     pub rb: Rbatis,
-    pub cache_service: CacheService,
     pub sys_user_service: SysUserService,
-    pub sys_dict_service: SysDictService
+    pub redis_service: RedisService,
 }
 
 impl ServiceContext {
     /// init database pool
     pub async fn init_pool(&self) {
-        //连接数据库
-        println!(
-            "[abs_admin] rbatis pool init ({})...",
+        log::info!(
+            "[primary_server] rbatis pool init ({})...",
             self.config.database_url
         );
+        let driver = rbdc_mysql::driver::MysqlDriver {};
+        let driver_name = format!("{:?}", driver);
         self.rb
-            .init(MysqlDriver {}, &self.config.database_url)
-            .expect("[abs_admin] rbatis pool init fail!");
+            .init(driver, &self.config.database_url)
+            .expect("[primary_server] rbatis pool init fail!");
+        self.rb.acquire().await.expect(&format!(
+            "rbatis connect database(driver={},url={}) fail",
+            driver_name, self.config.database_url
+        ));
         log::info!(
-            "[abs_admin] rbatis pool init success! pool state = {:?}",
+            "[primary_server] rbatis pool init success! pool state = {:?}",
             self.rb.get_pool().expect("pool not init!").status()
         );
         log::info!(
@@ -59,9 +58,8 @@ impl Default for ServiceContext {
         let config = ApplicationConfig::default();
         ServiceContext {
             rb: crate::domain::init_rbatis(&config),
-            cache_service: CacheService::new(&config).unwrap(),
             sys_user_service: SysUserService {},
-            sys_dict_service: SysDictService {},
+            redis_service: RedisService::new(&config.redis_url),
             config,
         }
     }

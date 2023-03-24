@@ -1,5 +1,5 @@
 use crate::domain::vo::RespVO;
-use crate::util::auth_util::{check_auth, checked_token, is_white_list_api};
+use crate::middleware::auth::{check_auth, checked_token, is_white_list_api};
 use crate::service::CONTEXT;
 use actix_http::body::BoxBody;
 use actix_web::error::ErrorUnauthorized;
@@ -12,6 +12,8 @@ use std::{
     future::{ready, Ready},
     rc::Rc,
 };
+
+/// actix_web request中间件
 
 pub struct Auth;
 
@@ -67,36 +69,27 @@ where
         // let fut = srv.call(req);
 
         Box::pin(async move {
-            //debug mode not enable auth
-            if !CONTEXT.config.debug {
-                if !is_white_list_api(&path) {
-                    //非白名单检查token是否有效
-                    match checked_token(&token, &path).await {
-                        Ok(data) => {
-                            // 临时注释权限校验
-                            //match check_auth(&data, &path).await {
-                            //    Ok(_) => {}
-                            //    Err(e) => {
-                            //        //仅提示拦截
-                            //        let resp: RespVO<String> = RespVO {
-                            //            code: Some("-1".to_string()),
-                            //            msg: Some(format!("无权限访问:{}", e.to_string())),
-                            //            data: None,
-                            //        };
-                            //        return Ok(req.into_response(resp.resp_json()));
-                            //    }
-                            //}
-                            {}
-                        }
+            if !is_white_list_api(&path) {
+                match checked_token(&token, &path).await {
+                    Ok(data) => match check_auth(&data, &path).await {
+                        Ok(_) => {}
                         Err(e) => {
-                            //401 http状态码会强制前端退出当前登陆状态
                             let resp: RespVO<String> = RespVO {
                                 code: Some("-1".to_string()),
-                                msg: Some(format!("Unauthorized for:{}", e.to_string())),
+                                msg: Some(format!("无权限访问:{}", e.to_string())),
                                 data: None,
                             };
-                            return Err(ErrorUnauthorized(serde_json::json!(&resp).to_string()));
+                            return Ok(req.into_response(resp.resp_json()));
                         }
+                    },
+                    Err(e) => {
+                        //401 http code will exit login
+                        let resp: RespVO<String> = RespVO {
+                            code: Some("-1".to_string()),
+                            msg: Some(format!("Unauthorized for:{}", e.to_string())),
+                            data: None,
+                        };
+                        return Err(ErrorUnauthorized(serde_json::json!(&resp).to_string()));
                     }
                 }
             }
