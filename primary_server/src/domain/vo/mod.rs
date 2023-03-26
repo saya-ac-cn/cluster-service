@@ -2,11 +2,13 @@ pub mod jwt;
 pub mod sign_in;
 pub mod user;
 pub mod log;
-
-pub use self::jwt::*;
-pub use self::sign_in::*;
-pub use self::user::*;
-pub use self::log::*;
+pub mod log_type;
+pub mod plan;
+pub mod plan_archive;
+pub mod db_dump_log;
+pub mod total_log;
+pub mod total_table;
+pub mod total_pre_6_month;
 
 use crate::error::Error;
 use actix_web::HttpResponse;

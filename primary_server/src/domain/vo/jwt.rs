@@ -1,7 +1,10 @@
 use crate::error::Error;
+use actix_web::HttpRequest;
+use actix_http::header::HeaderValue;
 use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation, Algorithm};
 use serde::{Deserialize, Serialize};
+use crate::service::CONTEXT;
 
 /// JWT authentication Token structure
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
@@ -21,6 +24,50 @@ pub struct JWTToken {
 }
 
 impl JWTToken {
+    /// extract token detail
+    /// secret: your secret string
+    pub fn extract_token(token:&String) -> Result<JWTToken, Error> {
+        let token = JWTToken::verify(&CONTEXT.config.jwt_secret, token);
+        if token.is_err() {
+            return Err(Error::from(format!("access_token is invalid!")));
+        }
+        let user_data = token.unwrap();
+        return Ok(user_data);
+    }
+
+    /// extract token detail
+    /// secret: your secret string
+    pub fn extract_token_by_header(token:Option<&HeaderValue>) -> Result<JWTToken, Error> {
+        return match token {
+            Some(token) => {
+                let token = token.to_str().unwrap_or("");
+                JWTToken::extract_token(&token.to_string())
+            }
+            _ => {
+                Err(Error::from(format!("access_token is empty!")))
+            }
+        }
+    }
+
+    /// extract token detail
+    /// secret: your secret string
+    pub fn extract_user_by_header(token:Option<&HeaderValue>) -> Option<JWTToken>{
+        let extract_result = &JWTToken::extract_token_by_header(token);
+        if extract_result.is_err() {
+            log::error!("在获取用户信息时，发生异常:{}",extract_result.clone().unwrap_err().to_string());
+            return None;
+        }
+        let user_session = extract_result.clone().unwrap();
+        return Some(user_session);
+    }
+
+    /// extract token detail
+    /// secret: your secret string
+    pub fn extract_user_by_request(req: &HttpRequest) -> Option<JWTToken>{
+        let token = req.headers().get("access_token");
+        JWTToken::extract_user_by_header(token)
+    }
+
     /// create token
     /// secret: your secret string
     pub fn create_token(&self, secret: &str) -> Result<String, Error> {
@@ -56,10 +103,10 @@ impl JWTToken {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::vo::JWTToken;
     use rbatis::rbdc::types::datetime::FastDateTime;
     use std::thread::sleep;
     use std::time::Duration;
+    use crate::domain::vo::jwt::JWTToken;
 
     #[test]
     fn test_jwt() {

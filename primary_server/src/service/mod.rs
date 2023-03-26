@@ -1,16 +1,28 @@
-mod sys_user_service;
+mod system_service;
 mod redis_service;
 
-use crate::service::sys_user_service::SysUserService;
 use crate::service::redis_service::RedisService;
 
 pub use crate::config::config::ApplicationConfig;
-use once_cell::sync::Lazy;
+use crate::util::scheduler::Scheduler;
 use rbatis::rbatis::Rbatis;
+use std::sync::Mutex;
+use lazy_static::lazy_static;
+use crate::service::system_service::SystemService;
+
+// 第一种初始化方法
+// /// CONTEXT is all of the service struct
+// pub static CONTEXT: Lazy<ServiceContext> = Lazy::new(|| ServiceContext::default());
 
 
-/// CONTEXT is all of the service struct
-pub static CONTEXT: Lazy<ServiceContext> = Lazy::new(|| ServiceContext::default());
+// 在lazy_static! { //your code} 中的代码并不会在编译时初始化静态量，它会在首次调用时，执行代码，来初始化。也就是所谓的延迟计算。
+lazy_static! {
+    // CONTEXT is all of the service struct
+    pub static ref CONTEXT: ServiceContext = ServiceContext::default();
+    // SCHEDULER is only SCHEDULER VARIABLE
+    pub static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::default());
+}
+
 
 #[macro_export]
 macro_rules! pool {
@@ -22,7 +34,7 @@ macro_rules! pool {
 pub struct ServiceContext {
     pub config: ApplicationConfig,
     pub rb: Rbatis,
-    pub sys_user_service: SysUserService,
+    pub system_service: SystemService,
     pub redis_service: RedisService,
 }
 
@@ -58,7 +70,7 @@ impl Default for ServiceContext {
         let config = ApplicationConfig::default();
         ServiceContext {
             rb: crate::domain::init_rbatis(&config),
-            sys_user_service: SysUserService {},
+            system_service: SystemService {},
             redis_service: RedisService::new(&config.redis_url),
             config,
         }
