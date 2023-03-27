@@ -62,24 +62,29 @@ impl SystemService {
         }
         let user_wrap = query_user_wrap.unwrap().into_iter().next();
         let user = user_wrap.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST)))?;
-        // 判断用户是否被锁定，2为锁定
+        // 判断用户是否被锁定
         if user.state.eq(&Some(0)) {
             return Err(Error::from("账户被禁用!"));
         }
-        let mut error = None;
         if !PasswordEncoder::verify(
             user.password
                 .as_ref()
                 .ok_or_else(|| Error::from(("错误的用户数据，密码为空!", util::NOT_PARAMETER)))?,
             &arg.password.clone().unwrap(),
         ) {
-            error = Some(Error::from("密码不正确!"));
+            return Err(Error::from("账户或密码不正确!"));
         }
-        if error.is_some() {
-            // TODO 这里还应该设置失败锁
-            return Err(error.unwrap());
+        // 生成用户jwt并返回
+        let sign_in_vo = self.generate_jwt(req, &user).await?;
+        // 默认 browser browser端，会话有效期1h
+        let mut exp:usize = 3600;
+        if arg.platform.is_some() && String::from("client").eq(&arg.platform.clone().unwrap()) {
+            // client 非浏览器端，会话有效期24h
+            exp = 604800
         }
-        let sign_in_vo = self.user_get_info(req, &user).await?;
+        let user_cache= sign_in_vo.user.clone();
+        CONTEXT.redis_service.set_string_ex() set_string("user","saya").await;
+
         // 通过上面生成的token，完整记录日志
         let extract_result = &JWTToken::extract_token(&sign_in_vo.access_token);
         LogMapper::record_log_by_jwt(pool!(), &extract_result.clone().unwrap(), String::from("OX001")).await;
@@ -87,9 +92,10 @@ impl SystemService {
     }
 
     /// 生成用户jwt并返回
-    pub async fn user_get_info(&self, req: &HttpRequest, user: &User) -> Result<SignInVO> {
+    pub async fn generate_jwt(&self, req: &HttpRequest, user: &User) -> Result<SignInVO> {
         //去除密码，增加安全性
         let mut user = user.clone();
+        user.password = None;
         // 如果服务前面没有代理，应该可以从请求peer_addr()中检索到它。
         // 否则，您可以检索请求connection_info()，并从中检索realip_remote_addr()
         let ip = if req.connection_info().realip_remote_addr().is_some(){
@@ -103,8 +109,6 @@ impl SystemService {
         }else {
             IpUtils::city_location(&ip).await
         };
-
-        user.password = None;
         // 准备壁纸
         let mut user_vo = UserVO::from(user.clone());
         //let query_picture_wrap = Pictures::select_by_column(business_rbatis_pool!(),Pictures::id(),&user_vo.background).await;
@@ -259,7 +263,7 @@ impl SystemService {
         }
         let user_warp = query_user_wrap.unwrap().into_iter().next();
         let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST)))?;
-        return self.user_get_info(req, &user).await;
+        return self.generate_jwt(req, &user).await;
     }
 
     /// 修改用户信息
