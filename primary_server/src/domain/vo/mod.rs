@@ -1,4 +1,5 @@
 pub mod jwt;
+pub mod user_context;
 pub mod sign_in;
 pub mod user;
 pub mod log;

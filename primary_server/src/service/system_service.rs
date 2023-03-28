@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 use actix_http::StatusCode;
 use crate::error::Error;
 use crate::error::Result;
@@ -30,6 +31,7 @@ use crate::util::date_time::{DateTimeUtil, DateUtils};
 extern crate simple_excel_writer as excel;
 use excel::*;
 use rbs::to_value;
+use rustflake::Snowflake;
 use crate::domain::mapper::db_dump_log_mapper::DbDumpLogMapper;
 use crate::domain::mapper::log_type_mapper::LogTypeMapper;
 use crate::domain::mapper::plan_archive_mapper::PlanArchiveMapper;
@@ -38,6 +40,7 @@ use crate::domain::vo::total_log::TotalLogVO;
 use crate::domain::vo::total_pre_6_month::TotalPre6MonthVO;
 use crate::domain::vo::total_table::TotalTable;
 use crate::{pool,util};
+use crate::domain::vo::user_context::UserContext;
 use crate::util::ip_util::IpUtils;
 
 /// 系统服务
@@ -53,8 +56,6 @@ impl SystemService {
         {
             return Err(Error::from(("账号和密码不能为空!", util::NOT_PARAMETER)));
         }
-        //CONTEXT.redis_service.set_string("user","saya").await;
-        //let aa = CONTEXT.redis_service.exists("user1").await;
         let query_user_wrap = User::select_by_account(pool!(),&arg.account.clone().unwrap()).await;
         if query_user_wrap.is_err() {
             error!("查询用户异常：{}",query_user_wrap.unwrap_err());
@@ -75,26 +76,40 @@ impl SystemService {
             return Err(Error::from("账户或密码不正确!"));
         }
         // 生成用户jwt并返回
-        let sign_in_vo = self.generate_jwt(req, &user).await?;
-        // 默认 browser browser端，会话有效期1h
-        let mut exp:usize = 3600;
-        if arg.platform.is_some() && String::from("client").eq(&arg.platform.clone().unwrap()) {
-            // client 非浏览器端，会话有效期24h
-            exp = 604800
+        let sign_in_vo = self.generate_token(req, &user,&arg.platform.clone().unwrap()).await?;
+
+        //let user_cache= sign_in_vo.user.clone();
+        /**
+        let token = format!("{}", &Snowflake::default().generate());
+        // 序列化：struct -> json
+        let serialized_user = serde_json::to_string(&arg).unwrap();
+        let cache_result:Result<String> = CONTEXT.redis_service.set_string_ex(&token,serialized_user.as_str(),Some(Duration::from_secs(3600))).await;
+        println!("serialized = {}", serialized_user);
+        // 反序列化： json -> struct
+        let user_cache:Result<String> = CONTEXT.redis_service.get_string(&token).await;
+        if user_cache.is_ok(){
+            let deserialized: SignInDTO = serde_json::from_str(user_cache.unwrap().as_str()).unwrap();
+            println!("deserialized = {:?}", deserialized);
         }
-        let user_cache= sign_in_vo.user.clone();
-        CONTEXT.redis_service.set_string_ex() set_string("user","saya").await;
+        **/
 
         // 通过上面生成的token，完整记录日志
-        let extract_result = &JWTToken::extract_token(&sign_in_vo.access_token);
-        LogMapper::record_log_by_jwt(pool!(), &extract_result.clone().unwrap(), String::from("OX001")).await;
+        //let extract_result = &JWTToken::extract_token(&sign_in_vo.access_token);
+        //LogMapper::record_log_by_jwt(pool!(), &extract_result.clone().unwrap(), String::from("OX001")).await;
         return Ok(sign_in_vo);
     }
 
-    /// 生成用户jwt并返回
-    pub async fn generate_jwt(&self, req: &HttpRequest, user: &User) -> Result<SignInVO> {
-        //去除密码，增加安全性
+    ///  生成用户token并返回
+    pub async fn generate_token(&self, req: &HttpRequest, user: &User,platform:&str) -> Result<SignInVO> {
+        // 默认 browser browser端，会话有效期1h
+        let mut ttl:u64 = util::BROWSER_PLATFORM_TTL;
+        if String::from("client").eq(platform) {
+            // client 非浏览器端，会话有效期7*24h
+            ttl = util::DESKTOP_PLATFORM_TTL;
+        }
+
         let mut user = user.clone();
+        // 密码脱敏
         user.password = None;
         // 如果服务前面没有代理，应该可以从请求peer_addr()中检索到它。
         // 否则，您可以检索请求connection_info()，并从中检索realip_remote_addr()
@@ -139,25 +154,19 @@ impl SystemService {
             sign_vo.log = log_warp.unwrap();
         }
 
-        let jwt_token = JWTToken {
-            account: user.account.unwrap_or_default(),
-            name: user.name.clone().unwrap_or_default(),
-            ip,
-            organize:user.organize_id.unwrap(),
-            city: city,
-            exp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize,// 时间和校验的时候保持一致，统一秒
-        };
-        sign_vo.access_token = jwt_token.create_token(&CONTEXT.config.jwt_secret)?;
-        return Ok(sign_vo);
-    }
+        let token_wrap = UserContext::create_token(&user.account.clone().unwrap()).await;
+        if token_wrap.is_err(){
+            error!("生成token时，发生异常:{}",token_wrap.unwrap_err());
+            return Err(Error::from("登录异常"));
+        }
 
-    /// 刷新token
-    pub async fn token_refresh(&self, req: &HttpRequest) -> Result<String>{
-        let mut jwt_token = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-        // 时间和校验的时候保持一致，统一秒
-        jwt_token.exp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize;
-        let access_token = jwt_token.create_token(&CONTEXT.config.jwt_secret).unwrap();
-        Ok(access_token)
+        let token = token_wrap.unwrap();
+        // TODO 挤用户下线待实现
+        let serialized_user = serde_json::to_string(&user).unwrap();
+        sign_vo.access_token = token.clone();
+        // 写入到redis
+        CONTEXT.redis_service.set_string_ex(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token),serialized_user.as_str(),Some(Duration::from_secs(ttl))).await;
+        return Ok(sign_vo);
     }
 
     /// 登出后台
@@ -254,17 +263,17 @@ impl SystemService {
     }
 
     /// 通过token获取用户信息
-    pub async fn user_get_info_by_token(&self, req: &HttpRequest) -> Result<SignInVO> {
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-        let query_user_wrap = User::select_by_account(pool!(), &user_info.account).await;
-        if query_user_wrap.is_err() {
-            error!("查询用户异常：{}",query_user_wrap.unwrap_err());
-            return Err(Error::from("查询用户失败!"));
-        }
-        let user_warp = query_user_wrap.unwrap().into_iter().next();
-        let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST)))?;
-        return self.generate_jwt(req, &user).await;
-    }
+    // pub async fn user_get_info_by_token(&self, req: &HttpRequest) -> Result<SignInVO> {
+    //     let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+    //     let query_user_wrap = User::select_by_account(pool!(), &user_info.account).await;
+    //     if query_user_wrap.is_err() {
+    //         error!("查询用户异常：{}",query_user_wrap.unwrap_err());
+    //         return Err(Error::from("查询用户失败!"));
+    //     }
+    //     let user_warp = query_user_wrap.unwrap().into_iter().next();
+    //     let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST)))?;
+    //     return self.generate_jwt(req, &user).await;
+    // }
 
     /// 修改用户信息
     pub async fn user_edit(&self, req: &HttpRequest, arg: &UserDTO) -> Result<u64> {

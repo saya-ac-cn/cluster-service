@@ -104,4 +104,18 @@ impl RedisService {
             ))),
         };
     }
+
+    /// 设置过期时间，单位：秒
+    pub async fn set_ex(&self, k: &str, ex: Option<Duration>) -> Result<i64> {
+        let k = k.to_string();
+        let mut conn = self.get_conn().await?;
+        return match redis::cmd("EXPIRE").arg(&[&k, &ex.unwrap().as_secs().to_string()]).query_async(&mut conn).await {
+            Ok(v) => Ok(v),
+            Err(e) => Err(Error::from(format!(
+                "RedisService expire fail:{}",
+                e.to_string()
+            ))),
+        };
+    }
+
 }

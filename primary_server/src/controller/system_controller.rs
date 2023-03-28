@@ -15,13 +15,6 @@ pub async fn login(req: HttpRequest,arg: web::Json<SignInDTO>) -> impl Responder
     return RespVO::from_result(&vo).resp_json();
 }
 
-/// 刷新token
-#[post("/token/refresh")]
-pub async fn token_refresh(req: HttpRequest) -> impl Responder {
-    let vo = CONTEXT.system_service.token_refresh(&req).await;
-    return RespVO::from_result(&vo).resp_json();
-}
-
 /// 用户注销
 pub async fn logout(req: HttpRequest) -> impl Responder {
     let vo = CONTEXT.system_service.logout(&req).await;
@@ -29,11 +22,11 @@ pub async fn logout(req: HttpRequest) -> impl Responder {
 }
 
 /// 获取当前用户信息
-#[get("/user")]
-pub async fn myself(req: HttpRequest) -> impl Responder {
-    let user_data = CONTEXT.system_service.user_get_info_by_token(&req).await;
-    return RespVO::from_result(&user_data).resp_json();
-}
+// #[get("/user")]
+// pub async fn myself(req: HttpRequest) -> impl Responder {
+//     let user_data = CONTEXT.system_service.user_get_info_by_token(&req).await;
+//     return RespVO::from_result(&user_data).resp_json();
+// }
 
 /// 添加用户
 #[post("/user")]

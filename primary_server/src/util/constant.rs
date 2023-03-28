@@ -35,3 +35,10 @@ pub const FORMAT_Y_M_D_T_H_M_S:&str = "%Y-%m-%dT%H:%M:%S";
 pub const FORMAT_Y_M_D_T_H_M_S_Z:&str = "%Y-%m-%dT%H:%M:%S%z";
 pub const FORMAT_Y_M_D:&str = "%Y-%m-%d";
 pub const FORMAT_YMD:&str = "%Y%m%d";
+
+/// 定义已登录用户的缓存前缀
+pub const USER_CACHE_PREFIX:&str = "login";
+/// 定义浏览器端token的过期时间，单位：秒
+pub const BROWSER_PLATFORM_TTL:u64 = 3600;
+/// 定义桌面端token的过期时间，单位：秒
+pub const  DESKTOP_PLATFORM_TTL:u64 = 604800;
