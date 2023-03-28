@@ -1,9 +1,6 @@
 use crate::error::Error;
 use actix_web::HttpRequest;
 use actix_http::header::HeaderValue;
-use actix_web::web::to;
-use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation, Algorithm};
 use log::error;
 use rustflake::Snowflake;
 use serde::{Deserialize, Serialize};
@@ -31,12 +28,12 @@ impl UserContext {
     pub async fn extract_token(token:&str) -> Result<UserContext, Error> {
         let verify = UserContext::verify(token).await;
         if verify.is_err() {
-            log::error!("check access_token is fail! cause by:{}",verify.unwrap_err());
+            error!("check access_token is fail! cause by:{}",verify.unwrap_err());
             return Err(Error::from(format!("access_token is invalid!")));
         }
         let user_cache= CONTEXT.redis_service.get_string(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token)).await;
         if user_cache.is_err(){
-            log::error!("take user context fail!! cause by:{}",user_cache.unwrap_err());
+            error!("take user context fail!! cause by:{}",user_cache.unwrap_err());
             return Err(Error::from(format!("take user context fail!")));
         }
         let user_data: UserContext = serde_json::from_str(user_cache.unwrap().as_str()).unwrap();
@@ -52,7 +49,7 @@ impl UserContext {
                 UserContext::extract_token(token).await
             }
             _ => {
-                log::error!("access_token is empty!");
+                error!("access_token is empty!");
                 Err(Error::from(format!("access_token is empty!")))
             }
         }
@@ -63,7 +60,7 @@ impl UserContext {
     pub async fn extract_user_by_header(token:Option<&HeaderValue>) -> Option<UserContext>{
         let extract_result = &UserContext::extract_token_by_header(token).await;
         if extract_result.is_err() {
-            log::error!("在获取用户信息时，发生异常:{}",extract_result.clone().unwrap_err().to_string());
+            error!("在获取用户信息时，发生异常:{}",extract_result.clone().unwrap_err().to_string());
             return None;
         }
         let user_session = extract_result.clone().unwrap();
@@ -95,13 +92,13 @@ impl UserContext {
                         Ok(true)
                     }
                     false => {
-                        log::error!("InvalidToken! token:{}",token);
+                        error!("InvalidToken! token:{}",token);
                         return Err(Error::from("InvalidToken"));
                     }
                 }
             }
             Err(err) => {
-                log::error!("check redis user token cache data fail! token:{:?}",err);
+                error!("check redis user token cache data fail! token:{:?}",err);
                 return Err(Error::from("InvalidToken other errors"));
             }
         };
