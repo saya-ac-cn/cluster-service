@@ -118,4 +118,53 @@ impl RedisService {
         };
     }
 
+    /// 使用scan模糊获取指定前缀的key，数量限制在20个以内
+    pub async fn scan(&self, k: &str) -> Result<Vec<String>> {
+        let k = format!("{}*", k);
+        let mut result = Vec::new();
+        let mut conn = self.get_conn().await?;
+        // scan 0 match login:shmily* count 10
+        let cmd_result:RedisResult<(i64, Vec<String>)> = redis::cmd("SCAN").arg(&["0", "MATCH", &k, "COUNT","20"]).query_async::<Connection,(i64, Vec<String>)>(&mut conn).await;
+        return match cmd_result {
+            Ok((next_cursor, keys)) => {
+                if 0 == next_cursor && !keys.is_empty() && keys.len() > 0 {
+                    result.extend(keys);
+                }
+                Ok(result)
+            },
+            Err(e) => Err(Error::from(format!(
+                "RedisService scan fail:{}",
+                e.to_string()
+            ))),
+        }
+    }
+
+    /// 删除指定的key
+    pub async fn delete(&self, k: &str) -> Result<i64> {
+        let k = k.to_string();
+        let mut conn = self.get_conn().await?;
+        return match redis::cmd("DEL").arg(&k).query_async(&mut conn).await {
+            Ok(v) => Ok(v),
+            Err(e) => Err(Error::from(format!(
+                "RedisService del fail:{}",
+                e.to_string()
+            ))),
+        };
+    }
+
+    /// 批量删除指定的key
+    pub async fn batch_delete(&self, keys:&Vec<String>) -> Result<i64> {
+        if keys.is_empty() {
+            return Ok(-1);
+        }
+        let mut conn = self.get_conn().await?;
+        return match redis::cmd("DEL").arg(&keys).query_async(&mut conn).await {
+            Ok(v) => Ok(v),
+            Err(e) => Err(Error::from(format!(
+                "RedisService del fail:{}",
+                e.to_string()
+            ))),
+        };
+    }
+
 }

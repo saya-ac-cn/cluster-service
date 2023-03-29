@@ -1,4 +1,4 @@
-use crate::domain::vo::jwt::JWTToken;
+use crate::domain::vo::user_context::UserContext;
 use crate::service::CONTEXT;
 pub struct Auth;
 
@@ -16,12 +16,12 @@ pub fn is_white_list_api(path: &str) -> bool {
 }
 
 ///Check whether the token is valid and has not expired
-pub async fn checked_token(token: &str, _path: &str) -> Result<JWTToken, crate::error::Error> {
+pub async fn checked_token(token: &str, _path: &str) -> Result<UserContext, crate::error::Error> {
     //check token alive
-    let token = JWTToken::verify(&CONTEXT.config.jwt_secret, token);
-    match token {
-        Ok(token) => {
-            return Ok(token);
+    let check = UserContext::verify(token).await;
+    match check {
+        Ok(context) => {
+            return Ok(context);
         }
         Err(e) => {
             return Err(crate::error::Error::from(e.to_string()));
@@ -30,7 +30,7 @@ pub async fn checked_token(token: &str, _path: &str) -> Result<JWTToken, crate::
 }
 
 ///Permission to check
-pub async fn check_auth(token: &JWTToken, path: &str) -> Result<(), crate::error::Error> {
+pub async fn check_auth(token: &UserContext, path: &str) -> Result<(), crate::error::Error> {
     return Ok(());
     // 先不做权限菜单的校验
     // let sys_res = CONTEXT.sys_res_service.finds_all().await?;

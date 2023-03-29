@@ -1,3 +1,4 @@
+use std::time::Duration;
 use crate::error::Error;
 use actix_web::HttpRequest;
 use actix_http::header::HeaderValue;
@@ -19,21 +20,18 @@ pub struct UserContext {
     // 登录ip
     pub ip: String,
     // 登录城市
-    pub city: String
+    pub city: String,
+    // 会话有效期
+    pub leeway: u64,
 }
 
 impl UserContext {
     /// extract token detail
     /// secret: your secret string
     pub async fn extract_token(token:&str) -> Result<UserContext, Error> {
-        let verify = UserContext::verify(token).await;
-        if verify.is_err() {
-            error!("check access_token is fail! cause by:{}",verify.unwrap_err());
-            return Err(Error::from(format!("access_token is invalid!")));
-        }
         let user_cache= CONTEXT.redis_service.get_string(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token)).await;
         if user_cache.is_err(){
-            error!("take user context fail!! cause by:{}",user_cache.unwrap_err());
+            error!("take user context fail! cause by:{}",user_cache.unwrap_err());
             return Err(Error::from(format!("take user context fail!")));
         }
         let user_data: UserContext = serde_json::from_str(user_cache.unwrap().as_str()).unwrap();
@@ -84,15 +82,20 @@ impl UserContext {
 
     /// verify token invalid
     /// secret: your secret string
-    pub async fn verify(token: &str) -> Result<bool, Error> {
-        return match CONTEXT.redis_service.exists(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token)).await{
-            Ok(exists) => {
-                match exists{
-                    true => {
-                        Ok(true)
-                    }
+    pub async fn verify(token: &str) -> Result<UserContext, Error> {
+        let key = format!("{:}:{:}", &util::USER_CACHE_PREFIX, token);
+        return match CONTEXT.redis_service.get_string(&key).await{
+            Ok(val) => {
+                match val.is_empty(){
                     false => {
-                        error!("InvalidToken! token:{}",token);
+                        // 反序列化成对象
+                        let user_data: UserContext = serde_json::from_str(val.as_str()).unwrap();
+                        // 完成一次续期
+                        CONTEXT.redis_service.set_ex(&key,Some(Duration::from_secs(user_data.leeway))).await;
+                        Ok(user_data)
+                    }
+                    true => {
+                        error!("InvalidToken! token={}",token);
                         return Err(Error::from("InvalidToken"));
                     }
                 }

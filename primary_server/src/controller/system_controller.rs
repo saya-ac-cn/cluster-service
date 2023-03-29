@@ -22,11 +22,11 @@ pub async fn logout(req: HttpRequest) -> impl Responder {
 }
 
 /// 获取当前用户信息
-// #[get("/user")]
-// pub async fn myself(req: HttpRequest) -> impl Responder {
-//     let user_data = CONTEXT.system_service.user_get_info_by_token(&req).await;
-//     return RespVO::from_result(&user_data).resp_json();
-// }
+#[get("/user")]
+pub async fn myself(req: HttpRequest) -> impl Responder {
+    let user_data = CONTEXT.system_service.user_get_info_by_token(&req).await;
+    return RespVO::from_result(&user_data).resp_json();
+}
 
 /// 添加用户
 #[post("/user")]

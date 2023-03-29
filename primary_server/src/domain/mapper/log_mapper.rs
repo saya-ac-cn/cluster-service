@@ -6,11 +6,11 @@ use rbatis::rbdc::db::ExecResult;
 use crate::domain::table::Log;
 use crate::domain::dto::log::LogPageDTO;
 use crate::domain::dto::page::{ExtendPageDTO};
-use crate::domain::vo::jwt::JWTToken;
 use crate::domain::vo::log::LogVO;
 use crate::util::date_time::{DateTimeUtil, DateUtils};
 
 use crate::domain::table::*;
+use crate::domain::vo::user_context::UserContext;
 use crate::util;
 crud!(Log {});
 
@@ -19,14 +19,14 @@ pub struct LogMapper{}
 impl LogMapper {
 
     /// 记录日志
-    pub async fn record_log_by_jwt(rb: &mut dyn Executor,jwt:&JWTToken, category: String) -> Result<rbatis::Result<ExecResult>, Error> {
+    pub async fn record_log_by_context(rb: &mut dyn Executor, context:&UserContext, category: String) -> Result<rbatis::Result<ExecResult>, Error> {
         let log = Log{
             id:None,
-            organize:Some(jwt.organize),
-            user:Some(jwt.account.clone()),
+            organize:Some(context.organize),
+            user:Some(context.account.clone()),
             category:Some(category),
-            ip:Some(jwt.ip.clone()),
-            city:Some(jwt.city.clone()),
+            ip:Some(context.ip.clone()),
+            city:Some(context.city.clone()),
             date:DateTimeUtil::naive_date_time_to_str(&Some(DateUtils::now()),&util::FORMAT_Y_M_D_H_M_S),
         };
         return Ok(Log::insert(rb,&log).await);
@@ -34,10 +34,10 @@ impl LogMapper {
 
     /// 记录日志
     pub async fn record_log_by_token(rb: &mut dyn Executor,token:Option<&HeaderValue>, category: String) -> Result<rbatis::Result<ExecResult>, Error> {
-        let extract_result = &JWTToken::extract_token_by_header(token);
+        let extract_result = &UserContext::extract_token_by_header(token).await;
         return match extract_result {
             Ok(token) => {
-                LogMapper::record_log_by_jwt(rb, token, category).await
+                LogMapper::record_log_by_context(rb, token, category).await
             }
             Err(e) => {
                 Err(Error::from(e.to_string()))

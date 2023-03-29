@@ -19,8 +19,6 @@ pub struct ApplicationConfig {
     /// 日志等级
     pub log_level: String,
     pub log_chan_len: Option<usize>,
-    /// jwt 秘钥
-    pub jwt_secret: String,
     /// 白名单接口
     pub white_list_api: Vec<String>,
     /// 发件人

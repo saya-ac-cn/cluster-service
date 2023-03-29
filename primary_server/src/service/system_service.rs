@@ -14,7 +14,6 @@ use crate::domain::mapper::user_mapper::UserMapper;
 use crate::domain::dto::page::{ExtendPageDTO};
 use crate::domain::dto::sign_in::SignInDTO;
 use crate::domain::dto::user::{UserDTO, UserPageDTO};
-use crate::domain::vo::jwt::JWTToken;
 use crate::domain::vo::sign_in::SignInVO;
 use crate::util::Page;
 use crate::domain::table::{Plan, PlanArchive, User};
@@ -75,37 +74,22 @@ impl SystemService {
         ) {
             return Err(Error::from("账户或密码不正确!"));
         }
-        // 生成用户jwt并返回
+        // 生成用户token并返回
         let sign_in_vo = self.generate_token(req, &user,&arg.platform.clone().unwrap()).await?;
 
-        //let user_cache= sign_in_vo.user.clone();
-        /**
-        let token = format!("{}", &Snowflake::default().generate());
-        // 序列化：struct -> json
-        let serialized_user = serde_json::to_string(&arg).unwrap();
-        let cache_result:Result<String> = CONTEXT.redis_service.set_string_ex(&token,serialized_user.as_str(),Some(Duration::from_secs(3600))).await;
-        println!("serialized = {}", serialized_user);
-        // 反序列化： json -> struct
-        let user_cache:Result<String> = CONTEXT.redis_service.get_string(&token).await;
-        if user_cache.is_ok(){
-            let deserialized: SignInDTO = serde_json::from_str(user_cache.unwrap().as_str()).unwrap();
-            println!("deserialized = {:?}", deserialized);
-        }
-        **/
-
         // 通过上面生成的token，完整记录日志
-        //let extract_result = &JWTToken::extract_token(&sign_in_vo.access_token);
-        //LogMapper::record_log_by_jwt(pool!(), &extract_result.clone().unwrap(), String::from("OX001")).await;
+        let context = UserContext::extract_token(&sign_in_vo.access_token).await?;
+        LogMapper::record_log_by_context(pool!(), &context, String::from("OX001")).await;
         return Ok(sign_in_vo);
     }
 
     ///  生成用户token并返回
     pub async fn generate_token(&self, req: &HttpRequest, user: &User,platform:&str) -> Result<SignInVO> {
         // 默认 browser browser端，会话有效期1h
-        let mut ttl:u64 = util::BROWSER_PLATFORM_TTL;
-        if String::from("client").eq(platform) {
-            // client 非浏览器端，会话有效期7*24h
-            ttl = util::DESKTOP_PLATFORM_TTL;
+        let mut leeway:u64 = util::BROWSER_PLATFORM_TTL;
+        if String::from("desktop").eq(platform) {
+            // desktop 非浏览器端，会话有效期7*24h
+            leeway = util::DESKTOP_PLATFORM_TTL;
         }
 
         let mut user = user.clone();
@@ -161,18 +145,43 @@ impl SystemService {
         }
 
         let token = token_wrap.unwrap();
-        // TODO 挤用户下线待实现
-        let serialized_user = serde_json::to_string(&user).unwrap();
+        let check:Result<bool> = self.check_duplicate_login(&user.account.clone().unwrap()).await;
+        if check.is_err() {
+            error!("检查用户是否重复登录时，发生异常:{}",check.unwrap_err());
+            return Err(Error::from("登录异常"));
+        }
+
+        // 生成用户的会话信息
+        let context:UserContext = UserContext{
+            account: user.account.unwrap_or_default(),
+            name: user.name.clone().unwrap_or_default(),
+            organize:user.organize_id.unwrap(),
+            ip,
+            city,
+            leeway
+        };
+        let serialized_user = serde_json::to_string(&context).unwrap();
         sign_vo.access_token = token.clone();
         // 写入到redis
-        CONTEXT.redis_service.set_string_ex(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token),serialized_user.as_str(),Some(Duration::from_secs(ttl))).await;
+        CONTEXT.redis_service.set_string_ex(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token),serialized_user.as_str(),Some(Duration::from_secs(leeway))).await;
         return Ok(sign_vo);
+    }
+
+    /// 检查用户是否已经登录过，登录过需要下线处理
+    pub async fn check_duplicate_login(&self, account:&str) -> Result<bool> {
+        let check = CONTEXT.redis_service.scan(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, account)).await;
+        if check.is_err() {
+            return Err(check.unwrap_err());
+        }
+        let keys:Vec<String> = check.unwrap();
+        CONTEXT.redis_service.batch_delete(&keys).await;
+        Ok(true)
     }
 
     /// 登出后台
     pub async fn logout(&self, req: &HttpRequest) {
-        let user_info = JWTToken::extract_user_by_request(req).unwrap();
-        LogMapper::record_log_by_jwt(pool!(), &user_info, String::from("OX002")).await;
+        let user_info = UserContext::extract_user_by_request(req).await;
+        LogMapper::record_log_by_context(pool!(), &user_info.unwrap(), String::from("OX002")).await;
     }
 
     /// 用户分页
@@ -263,17 +272,17 @@ impl SystemService {
     }
 
     /// 通过token获取用户信息
-    // pub async fn user_get_info_by_token(&self, req: &HttpRequest) -> Result<SignInVO> {
-    //     let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-    //     let query_user_wrap = User::select_by_account(pool!(), &user_info.account).await;
-    //     if query_user_wrap.is_err() {
-    //         error!("查询用户异常：{}",query_user_wrap.unwrap_err());
-    //         return Err(Error::from("查询用户失败!"));
-    //     }
-    //     let user_warp = query_user_wrap.unwrap().into_iter().next();
-    //     let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST)))?;
-    //     return self.generate_jwt(req, &user).await;
-    // }
+    pub async fn user_get_info_by_token(&self, req: &HttpRequest) -> Result<UserVO> {
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let query_user_wrap = User::select_by_account(pool!(), &user_info.account).await;
+        if query_user_wrap.is_err() {
+            error!("查询用户异常：{}",query_user_wrap.unwrap_err());
+            return Err(Error::from("查询用户失败!"));
+        }
+        let user_warp = query_user_wrap.unwrap().into_iter().next();
+        let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST)))?;
+        return Ok(UserVO::from(user));
+    }
 
     /// 修改用户信息
     pub async fn user_edit(&self, req: &HttpRequest, arg: &UserDTO) -> Result<u64> {
@@ -312,8 +321,8 @@ impl SystemService {
             error!("在修改用户{}的信息时，发生异常:{}",arg.account.as_ref().unwrap(),result.unwrap_err());
             return Err(Error::from(format!("修改账户[{}]信息失败!", arg.account.as_ref().unwrap())));
         }
-        let jwt_token = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-        LogMapper::record_log_by_jwt(pool!(), &jwt_token, String::from("OX003")).await;
+        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        LogMapper::record_log_by_context(pool!(), &context, String::from("OX003")).await;
         Ok(result.unwrap().rows_affected)
     }
 
@@ -342,8 +351,8 @@ impl SystemService {
 
     /// 获取当前用户所在组织的用户列表
     pub async fn user_get_own_organize(&self, req: &HttpRequest) -> Result<Vec<UserOwnOrganizeVO>> {
-        let jwt_token = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-        let query_result = UserMapper::select_own_organize_user(pool!(), &jwt_token.account).await;
+        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let query_result = UserMapper::select_own_organize_user(pool!(), &context.account).await;
         if query_result.is_err() {
             error!("在查询用户所属组织下的用户列表时，发生异常:{}",query_result.unwrap_err());
             return Err(Error::from(format!("查询我所属组织的用户列表异常")));
@@ -389,8 +398,8 @@ impl SystemService {
             error!("在修改用户{}的密码时，发生异常:{}",arg.account.as_ref().unwrap(),result.unwrap_err());
             return Err(Error::from(format!("修改账户[{}]密码失败!", arg.account.as_ref().unwrap())));
         }
-        let jwt_token = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-        LogMapper::record_log_by_jwt(pool!(), &jwt_token, String::from("OX004")).await;
+        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        LogMapper::record_log_by_context(pool!(), &context, String::from("OX004")).await;
         Ok(result.unwrap().rows_affected)
     }
 
@@ -412,7 +421,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         let mut arg= param.clone();
         arg.organize = Some(user_info.organize);
 
@@ -448,7 +457,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = JWTToken::extract_user_by_request(req).unwrap();
+        let user_info = UserContext::extract_user_by_request(req).await.unwrap();
         let mut arg= param.clone();
         arg.organize = Some(user_info.organize);
 
@@ -500,7 +509,7 @@ impl SystemService {
 
     /// 计算近6个月的活跃情况
     // pub async fn compute_pre6_logs(&self, req: &HttpRequest,month:&String) ->Result<TotalLogVO> {
-    //     let user_info = JWTToken::extract_user_by_request(req).unwrap();
+    //     let user_info = UserContext::extract_user_by_request(req).await.unwrap();
     //     let user_month_wrap = chrono::NaiveDate::parse_from_str(month.as_str(),&util::FORMAT_Y_M_D);
     //     if user_month_wrap.is_err() {
     //         return Err(Error::from(("统计月份不能为空!", util::NOT_PARAMETER)));
@@ -549,7 +558,7 @@ impl SystemService {
     //     let mut rose_data: Vec<Bson> = rbson::Array::new();
     //     let mut word_cloud: Vec<Bson> = rbson::Array::new();
     //     let mut result = rbson::Document::new();
-    //     let user_info = JWTToken::extract_user_by_request(req).unwrap();
+    //     let user_info = UserContext::extract_user_by_request(req).await.unwrap();
     //
     //     let query_notebook_sql = "select a.`name`, count(b.`id`) as value from `note_book` a left join `notes` b on a.`id` = b.`notebook_id` where a.`organize` = ? group by a.`id`";
     //     let query_notebook_result_warp = business_rbatis_pool!().fetch_decode(query_notebook_sql, vec![to_value!(user_info.organize)]).await;
@@ -664,7 +673,7 @@ impl SystemService {
         let next_exec_time = DateUtils::plan_data_compute(&standard_time,arg.cycle.unwrap(),arg.unit.unwrap());
         // 生成定时cron表达式
         let cron_tab = DateUtils::data_time_to_cron(&standard_time);
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         //   `cycle` 重复执行周期(1：一次性，2：天，3：周，4：月，5：年)',
         //   `unit` '重复执行周期单位',
         let plan = Plan{
@@ -691,7 +700,7 @@ impl SystemService {
         let result = write_result.unwrap();
         let plan_id = result.last_insert_id.as_u64().unwrap();
         SCHEDULER.lock().unwrap().add(plan_id,cron_tab.as_str());
-        LogMapper::record_log_by_jwt(pool!(),&user_info,String::from("OX022")).await;
+        LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX022")).await;
         return Ok(result.rows_affected);
     }
 
@@ -701,7 +710,7 @@ impl SystemService {
         if check_flag{
             return Err(Error::from(("基准时间、重复执行周期、单位和内容不能为空!",util::NOT_PARAMETER)));
         }
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
 
         let query_plan_wrap = Plan::select_by_id(pool!(),   &arg.id.unwrap()).await;
         if query_plan_wrap.is_err() {
@@ -746,13 +755,13 @@ impl SystemService {
         let mut scheduler = SCHEDULER.lock().unwrap();
         scheduler.remove(plan_exist.id.unwrap());
         scheduler.add(plan_exist.id.unwrap(),cron_tab.as_str());
-        LogMapper::record_log_by_jwt(pool!(),&user_info,String::from("OX023")).await;
+        LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX023")).await;
         return Ok(result?.rows_affected);
     }
 
     /// 删除提醒事项
     pub async fn delete_plan(&self, req: &HttpRequest,id: &u64) -> Result<u64> {
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         // 只能删除自己组织机构下的数据
         let write_result = Plan::delete_by_id_organize(pool!(),id,&user_info.organize).await;
         if write_result.is_err(){
@@ -760,7 +769,7 @@ impl SystemService {
             return Err(Error::from("删除提醒事项失败!"));
         }
         SCHEDULER.lock().unwrap().remove(*id);
-        LogMapper::record_log_by_jwt(pool!(),&user_info,String::from("OX024")).await;
+        LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX024")).await;
         return Ok(write_result?.rows_affected);
     }
 
@@ -772,7 +781,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         let mut arg= param.clone();
         // 用户只能看到自己组织下的数据
         arg.organize = Some(user_info.organize);
@@ -802,7 +811,7 @@ impl SystemService {
 
     /// 提前完成计划提醒
     pub async fn advance_finish_plan(&self, req: &HttpRequest,id: &u64) -> Result<u64> {
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         let query_plan_wrap = Plan::select_by_id(pool!(), id).await;
         if query_plan_wrap.is_err() {
             error!("查询提醒事项异常：{}",query_plan_wrap.unwrap_err());
@@ -873,7 +882,7 @@ impl SystemService {
         let cron_tab = DateUtils::data_time_to_cron(&standard_time);
         scheduler.remove(plan_exist.id.unwrap());
         scheduler.add(plan_exist.id.unwrap(),cron_tab.as_str());
-        LogMapper::record_log_by_jwt(pool!(),&user_info,String::from("OX023")).await;
+        LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX023")).await;
         return Ok(add_plan_archive_result?.rows_affected);
     }
 
@@ -885,7 +894,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         let mut arg= param.clone();
         // 用户只能看到自己组织下的数据
         arg.organize = Some(user_info.organize);
@@ -934,21 +943,21 @@ impl SystemService {
             error!("在修改id={}的提醒事项时，发生异常:{}",arg.id.as_ref().unwrap(),result.unwrap_err());
             return Err(Error::from("提醒事项修改失败"));
         }
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
-        LogMapper::record_log_by_jwt(pool!(),&user_info,String::from("OX023")).await;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX023")).await;
         return Ok(result?.rows_affected);
     }
 
     /// 归档计划提醒的删除
     pub async fn delete_plan_archive(&self, req: &HttpRequest,id: &u64) -> Result<u64> {
-        let user_info = JWTToken::extract_user_by_request(req).ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
         // 只能删除自己组织机构下的数据
         let write_result = PlanArchive::delete_by_id(pool!(),id).await;
         if write_result.is_err(){
             error!("删除归档提醒事项时，发生异常:{}",write_result.unwrap_err());
             return Err(Error::from("删除归档提醒事项失败!"));
         }
-        LogMapper::record_log_by_jwt(pool!(),&user_info,String::from("OX024")).await;
+        LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX024")).await;
         return Ok(write_result?.rows_affected);
     }
 
