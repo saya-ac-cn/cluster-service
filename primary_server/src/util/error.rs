@@ -37,17 +37,34 @@ impl From<io::Error> for Error {
     }
 }
 
-/// 用户没有指定状态码时，默认util::CODE_FAIL
-impl From<&str> for Error {
-    fn from(arg: &str) -> Self {
-        return Error::E(arg.to_string(),util::CODE_FAIL);
+/// 用户没有指定状态码时，默认util::FAIL
+impl From<i32> for Error {
+    fn from(arg: i32) -> Self {
+        match arg {
+            util::NOT_AUTHORIZE_CODE => {
+                Error::E(String::from("not authorize error"),util::NOT_AUTHORIZE_CODE)
+            }
+            util::TOKEN_ERROR_CODE => {
+                Error::E(String::from("token error"),util::TOKEN_ERROR_CODE)
+            }
+            _ => {
+                Error::E(String::from("other error"),arg)
+            }
+        }
     }
 }
 
-/// 用户没有指定状态码时，默认util::CODE_FAIL
+/// 用户没有指定状态码时，默认util::FAIL
+impl From<&str> for Error {
+    fn from(arg: &str) -> Self {
+        return Error::E(arg.to_string(),util::FAIL_CODE);
+    }
+}
+
+/// 用户没有指定状态码时，默认util::FAIL
 impl From<std::string::String> for Error {
     fn from(arg: String) -> Self {
-        return Error::E(arg,util::CODE_FAIL);
+        return Error::E(arg,util::FAIL_CODE);
     }
 }
 
@@ -72,21 +89,21 @@ impl From<Error> for std::io::Error {
 /// 为防止敏感信息泄露，std框架产生的异常需要对外脱敏，在这里赋予特殊的状态码
 impl From<&dyn std::error::Error> for Error {
     fn from(arg: &dyn std::error::Error) -> Self {
-        return Error::E(arg.to_string(),util::UNKNOWN_ERROR);
+        return Error::E(arg.to_string(),util::UNKNOWN_ERROR_CODE);
     }
 }
 
 /// 为防止敏感信息泄露，rbatis框架产生的异常需要对外脱敏，在这里赋予特殊的状态码
 impl From<rbatis::error::Error> for Error {
     fn from(arg: rbatis::error::Error) -> Self {
-        Error::E(arg.to_string(),util::UNKNOWN_ERROR)
+        Error::E(arg.to_string(),util::UNKNOWN_ERROR_CODE)
     }
 }
 
 /// 为防止敏感信息泄露，actix_web框架产生的异常需要对外脱敏，在这里赋予特殊的状态码
 impl From<actix_web::error::Error> for Error {
     fn from(arg: actix_web::error::Error) -> Self {
-        Error::E(arg.to_string(),util::UNKNOWN_ERROR)
+        Error::E(arg.to_string(),util::UNKNOWN_ERROR_CODE)
     }
 }
 

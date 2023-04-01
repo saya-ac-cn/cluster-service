@@ -1,5 +1,5 @@
 use std::time::Duration;
-use crate::error::Error;
+use crate::util::error::Error;
 use actix_web::HttpRequest;
 use actix_http::header::HeaderValue;
 use log::error;
@@ -29,12 +29,8 @@ impl UserContext {
     /// extract token detail
     /// secret: your secret string
     pub async fn extract_token(token:&str) -> Result<UserContext, Error> {
-        let user_cache= CONTEXT.redis_service.get_string(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token)).await;
-        if user_cache.is_err(){
-            error!("take user context fail! cause by:{}",user_cache.unwrap_err());
-            return Err(Error::from(format!("take user context fail!")));
-        }
-        let user_data: UserContext = serde_json::from_str(user_cache.unwrap().as_str()).unwrap();
+        let user_cache= CONTEXT.redis_service.get_string(&format!("{:}:{:}", &util::USER_CACHE_PREFIX, token)).await?;
+        let user_data: UserContext = serde_json::from_str(user_cache.as_str()).unwrap();
         return Ok(user_data);
     }
 
@@ -48,7 +44,7 @@ impl UserContext {
             }
             _ => {
                 error!("access_token is empty!");
-                Err(Error::from(format!("access_token is empty!")))
+                return Err(Error::from((util::NOT_AUTHORIZE_CODE)));
             }
         }
     }
@@ -96,13 +92,13 @@ impl UserContext {
                     }
                     true => {
                         error!("InvalidToken! token={}",token);
-                        return Err(Error::from("InvalidToken"));
+                        return Err(Error::from((util::TOKEN_ERROR_CODE)));
                     }
                 }
             }
             Err(err) => {
                 error!("check redis user token cache data fail! token:{:?}",err);
-                return Err(Error::from("InvalidToken other errors"));
+                return Err(Error::from(("InvalidToken other errors",util::FAIL_CODE)));
             }
         };
     }

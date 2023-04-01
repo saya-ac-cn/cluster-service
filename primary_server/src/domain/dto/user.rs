@@ -35,6 +35,7 @@ pub struct UserDTO {
     pub create_time: Option<String>,
     /// 修改时间
     pub update_time: Option<String>,
+    pub token: Option<String>,
 }
 
 impl UserDTO {
@@ -56,7 +57,8 @@ impl UserDTO {
             organize_id: None,
             state: None,
             create_time: None,
-            update_time: None
+            update_time: None,
+            token: None
         }
     }
 }

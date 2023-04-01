@@ -4,7 +4,6 @@ extern crate rbatis;
 pub mod util;
 pub mod config;
 pub mod domain;
-pub mod error;
 pub mod service;
 pub mod controller;
 pub mod middleware;

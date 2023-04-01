@@ -8,6 +8,12 @@ use crate::domain::dto::user::{UserDTO, UserPageDTO};
 use crate::domain::vo::{RespVO};
 use crate::service::CONTEXT;
 
+/// 生成token
+pub async fn token() -> impl Responder {
+    let vo = CONTEXT.system_service.token().await;
+    return RespVO::from_result(&vo).resp_json();
+}
+
 /// 用户登录
 pub async fn login(req: HttpRequest,arg: web::Json<SignInDTO>) -> impl Responder {
     log::info!("login:{:?}", arg.0);
@@ -18,7 +24,7 @@ pub async fn login(req: HttpRequest,arg: web::Json<SignInDTO>) -> impl Responder
 /// 用户注销
 pub async fn logout(req: HttpRequest) -> impl Responder {
     let vo = CONTEXT.system_service.logout(&req).await;
-    return RespVO::from(&()).resp_json();
+    return RespVO::from_result(&vo).resp_json();
 }
 
 /// 获取当前用户信息

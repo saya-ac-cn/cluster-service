@@ -16,7 +16,7 @@ pub fn is_white_list_api(path: &str) -> bool {
 }
 
 ///Check whether the token is valid and has not expired
-pub async fn checked_token(token: &str, _path: &str) -> Result<UserContext, crate::error::Error> {
+pub async fn checked_token(token: &str, _path: &str) -> Result<UserContext, crate::util::error::Error> {
     //check token alive
     let check = UserContext::verify(token).await;
     match check {
@@ -24,13 +24,13 @@ pub async fn checked_token(token: &str, _path: &str) -> Result<UserContext, crat
             return Ok(context);
         }
         Err(e) => {
-            return Err(crate::error::Error::from(e.to_string()));
+            return Err(e);
         }
     }
 }
 
 ///Permission to check
-pub async fn check_auth(token: &UserContext, path: &str) -> Result<(), crate::error::Error> {
+pub async fn check_auth(token: &UserContext, path: &str) -> Result<(), crate::util::error::Error> {
     return Ok(());
     // 先不做权限菜单的校验
     // let sys_res = CONTEXT.sys_res_service.finds_all().await?;
@@ -49,5 +49,5 @@ pub async fn check_auth(token: &UserContext, path: &str) -> Result<(), crate::er
     //         }
     //     }
     // }
-    // return Err(crate::error::Error::from("无权限访问!"));
+    // return Err(crate::util::error::Error::from("无权限访问!"));
 }

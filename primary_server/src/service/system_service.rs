@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::time::Duration;
 use actix_http::StatusCode;
-use crate::error::Error;
-use crate::error::Result;
+use crate::util::error::Error;
+use crate::util::error::Result;
 use crate::service::{CONTEXT,SCHEDULER};
 use crate::domain::vo::user::{UserOwnOrganizeVO, UserVO};
 use crate::util::password_encoder_util::PasswordEncoder;
@@ -41,11 +41,19 @@ use crate::domain::vo::total_table::TotalTable;
 use crate::{pool,util};
 use crate::domain::vo::user_context::UserContext;
 use crate::util::ip_util::IpUtils;
+use crate::util::token_util::TokenUtils;
 
 /// 系统服务
 pub struct SystemService {}
 
 impl SystemService {
+
+    /// 颁发token
+    pub async fn token(&self) -> Result<String> {
+        let token = TokenUtils::create_token().await;
+        return Ok(token);
+    }
+
     /// 登录
     pub async fn login(&self, req: &HttpRequest, arg: &SignInDTO) -> Result<SignInVO> {
         if arg.account.is_none()
@@ -53,7 +61,7 @@ impl SystemService {
             || arg.password.is_none()
             || arg.password.as_ref().unwrap().is_empty()
         {
-            return Err(Error::from(("账号和密码不能为空!", util::NOT_PARAMETER)));
+            return Err(Error::from(("账号和密码不能为空!", util::NOT_PARAMETER_CODE)));
         }
         let query_user_wrap = User::select_by_account(pool!(),&arg.account.clone().unwrap()).await;
         if query_user_wrap.is_err() {
@@ -61,7 +69,7 @@ impl SystemService {
             return Err(Error::from("查询用户失败!"));
         }
         let user_wrap = query_user_wrap.unwrap().into_iter().next();
-        let user = user_wrap.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST)))?;
+        let user = user_wrap.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST_CODE)))?;
         // 判断用户是否被锁定
         if user.state.eq(&Some(0)) {
             return Err(Error::from("账户被禁用!"));
@@ -69,7 +77,7 @@ impl SystemService {
         if !PasswordEncoder::verify(
             user.password
                 .as_ref()
-                .ok_or_else(|| Error::from(("错误的用户数据，密码为空!", util::NOT_PARAMETER)))?,
+                .ok_or_else(|| Error::from(("错误的用户数据，密码为空!", util::NOT_PARAMETER_CODE)))?,
             &arg.password.clone().unwrap(),
         ) {
             return Err(Error::from("账户或密码不正确!"));
@@ -179,9 +187,10 @@ impl SystemService {
     }
 
     /// 登出后台
-    pub async fn logout(&self, req: &HttpRequest) {
+    pub async fn logout(&self, req: &HttpRequest) -> Result<UserContext> {
         let user_info = UserContext::extract_user_by_request(req).await;
-        LogMapper::record_log_by_context(pool!(), &user_info.unwrap(), String::from("OX002")).await;
+        LogMapper::record_log_by_context(pool!(), &user_info.clone().unwrap(), String::from("OX002")).await;
+        Ok(user_info.unwrap())
     }
 
     /// 用户分页
@@ -199,7 +208,7 @@ impl SystemService {
         }
         let total_row = count_result.unwrap().unwrap();
         if total_row <= 0 {
-            return Err(Error::from(("未查询到符合条件的数据", util::NOT_EXIST)));
+            return Err(Error::from(("未查询到符合条件的数据", util::NOT_EXIST_CODE)));
         }
         let mut result = Page::<UserVO>::page_query(total_row, &extend);
         // 重新设置limit起始位置
@@ -223,7 +232,7 @@ impl SystemService {
     pub async fn user_add(&self, arg: &UserDTO) -> Result<u64> {
         let check_flag = arg.account.is_none() || arg.account.as_ref().unwrap().is_empty() || arg.name.is_none() || arg.name.as_ref().unwrap().is_empty() || arg.email.is_none() || arg.email.as_ref().unwrap().is_empty() || arg.phone.is_none() || arg.phone.as_ref().unwrap().is_empty() || arg.organize_id.is_none();
         if check_flag {
-            return Err(Error::from(("账号、姓名、手机号、邮箱以及所属组织不能为空!", util::NOT_PARAMETER)));
+            return Err(Error::from(("账号、姓名、手机号、邮箱以及所属组织不能为空!", util::NOT_PARAMETER_CODE)));
         }
 
         let query_user_wrap = User::select_by_account(pool!(),&arg.account.clone().unwrap()).await;
@@ -273,21 +282,22 @@ impl SystemService {
 
     /// 通过token获取用户信息
     pub async fn user_get_info_by_token(&self, req: &HttpRequest) -> Result<UserVO> {
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(Error::from(util::NOT_AUTHORIZE_CODE)))?;
         let query_user_wrap = User::select_by_account(pool!(), &user_info.account).await;
         if query_user_wrap.is_err() {
             error!("查询用户异常：{}",query_user_wrap.unwrap_err());
             return Err(Error::from("查询用户失败!"));
         }
         let user_warp = query_user_wrap.unwrap().into_iter().next();
-        let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST)))?;
+        let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &user_info.account), util::NOT_EXIST_CODE)))?;
         return Ok(UserVO::from(user));
     }
 
     /// 修改用户信息
     pub async fn user_edit(&self, req: &HttpRequest, arg: &UserDTO) -> Result<u64> {
+        //TokenUtils::check_token(arg.token.clone()).await.ok_or_else(|| Error::from(util::TOKEN_ERROR_CODE))?;
         if arg.account.is_none() || arg.account.as_ref().unwrap().is_empty() {
-            return Err(Error::from(("账号account不能为空!", util::NOT_PARAMETER)));
+            return Err(Error::from(("账号account不能为空!", util::NOT_PARAMETER_CODE)));
         }
         // 首先判断要修改的用户是否存在
         let query_user_wrap = User::select_by_account(pool!(),  &arg.account.clone().unwrap()).await;
@@ -296,7 +306,7 @@ impl SystemService {
             return Err(Error::from("查询用户失败!"));
         }
         let user_warp = query_user_wrap.unwrap().into_iter().next();
-        let user_exist = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST)))?;
+        let user_exist = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST_CODE)))?;
 
         let user_edit = User {
             account: user_exist.account,
@@ -321,7 +331,7 @@ impl SystemService {
             error!("在修改用户{}的信息时，发生异常:{}",arg.account.as_ref().unwrap(),result.unwrap_err());
             return Err(Error::from(format!("修改账户[{}]信息失败!", arg.account.as_ref().unwrap())));
         }
-        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         LogMapper::record_log_by_context(pool!(), &context, String::from("OX003")).await;
         Ok(result.unwrap().rows_affected)
     }
@@ -329,7 +339,7 @@ impl SystemService {
     /// 删除用户
     pub async fn user_remove(&self, account: &str) -> Result<u64> {
         if account.is_empty() {
-            return Err(Error::from(("account 不能为空！", util::NOT_PARAMETER)));
+            return Err(Error::from(("account 不能为空！", util::NOT_PARAMETER_CODE)));
         }
         let r = User::delete_by_account(pool!(),account.clone()).await?;
         return Ok(r.rows_affected);
@@ -344,14 +354,14 @@ impl SystemService {
             return Err(Error::from("查询用户失败!"));
         }
         let user_warp = query_user_wrap.unwrap().into_iter().next();
-        let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &account.clone()), util::NOT_EXIST)))?;
+        let user = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &account.clone()), util::NOT_EXIST_CODE)))?;
         let user_vo = UserVO::from(user);
         return Ok(user_vo);
     }
 
     /// 获取当前用户所在组织的用户列表
     pub async fn user_get_own_organize(&self, req: &HttpRequest) -> Result<Vec<UserOwnOrganizeVO>> {
-        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         let query_result = UserMapper::select_own_organize_user(pool!(), &context.account).await;
         if query_result.is_err() {
             error!("在查询用户所属组织下的用户列表时，发生异常:{}",query_result.unwrap_err());
@@ -363,7 +373,7 @@ impl SystemService {
     /// 修改用户密码
     pub async fn user_update_password(&self, req: &HttpRequest, arg: &UserDTO) -> Result<u64> {
         if arg.password.is_none() || arg.password.as_ref().unwrap().is_empty() {
-            return Err(Error::from(("密码不能为空!", util::NOT_PARAMETER)));
+            return Err(Error::from(("密码不能为空!", util::NOT_PARAMETER_CODE)));
         }
         // 首先判断要修改的用户是否存在
 
@@ -373,7 +383,7 @@ impl SystemService {
             return Err(Error::from("查询用户失败!"));
         }
         let user_warp = query_user_wrap.unwrap().into_iter().next();
-        let user_exist = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST)))?;
+        let user_exist = user_warp.ok_or_else(|| Error::from((format!("账号:{} 不存在!", &arg.account.clone().unwrap()), util::NOT_EXIST_CODE)))?;
 
         let user_edit = User {
             account: user_exist.account,
@@ -398,7 +408,7 @@ impl SystemService {
             error!("在修改用户{}的密码时，发生异常:{}",arg.account.as_ref().unwrap(),result.unwrap_err());
             return Err(Error::from(format!("修改账户[{}]密码失败!", arg.account.as_ref().unwrap())));
         }
-        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let context = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         LogMapper::record_log_by_context(pool!(), &context, String::from("OX004")).await;
         Ok(result.unwrap().rows_affected)
     }
@@ -421,7 +431,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         let mut arg= param.clone();
         arg.organize = Some(user_info.organize);
 
@@ -432,7 +442,7 @@ impl SystemService {
         }
         let total_row = count_result.unwrap().unwrap();
         if total_row <= 0 {
-            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST)));
+            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST_CODE)));
         }
         let mut result = Page::<LogVO>::page_query( total_row, &extend);
         // 重新设置limit起始位置
@@ -658,7 +668,7 @@ impl SystemService {
     pub async fn add_plan(&self, req: &HttpRequest,arg: &PlanDTO) -> Result<u64> {
         let check_flag = arg.standard_time.is_none() || arg.cycle.is_none() || arg.unit.is_none() || arg.content.is_none() || arg.content.as_ref().unwrap().is_empty();
         if check_flag{
-            return Err(Error::from(("基准时间、重复执行周期、单位和内容不能为空!",util::NOT_PARAMETER)));
+            return Err(Error::from(("基准时间、重复执行周期、单位和内容不能为空!",util::NOT_PARAMETER_CODE)));
         }
         let cycle = arg.cycle.unwrap();
 
@@ -673,7 +683,7 @@ impl SystemService {
         let next_exec_time = DateUtils::plan_data_compute(&standard_time,arg.cycle.unwrap(),arg.unit.unwrap());
         // 生成定时cron表达式
         let cron_tab = DateUtils::data_time_to_cron(&standard_time);
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         //   `cycle` 重复执行周期(1：一次性，2：天，3：周，4：月，5：年)',
         //   `unit` '重复执行周期单位',
         let plan = Plan{
@@ -708,9 +718,9 @@ impl SystemService {
     pub async fn edit_plan(&self, req: &HttpRequest,arg: &PlanDTO) -> Result<u64> {
         let check_flag = arg.id.is_none() || arg.standard_time.is_none() || arg.cycle.is_none() || arg.unit.is_none() || arg.content.is_none() || arg.content.as_ref().unwrap().is_empty();
         if check_flag{
-            return Err(Error::from(("基准时间、重复执行周期、单位和内容不能为空!",util::NOT_PARAMETER)));
+            return Err(Error::from(("基准时间、重复执行周期、单位和内容不能为空!",util::NOT_PARAMETER_CODE)));
         }
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
 
         let query_plan_wrap = Plan::select_by_id(pool!(),   &arg.id.unwrap()).await;
         if query_plan_wrap.is_err() {
@@ -718,7 +728,7 @@ impl SystemService {
             return Err(Error::from("查询提醒事项失败!"));
         }
         let plan_warp = query_plan_wrap.unwrap().into_iter().next();
-        let plan_exist = plan_warp.ok_or_else(|| Error::from((format!("id={} 的提醒事项不存在!", arg.id.unwrap()), util::NOT_EXIST)))?;
+        let plan_exist = plan_warp.ok_or_else(|| Error::from((format!("id={} 的提醒事项不存在!", arg.id.unwrap()), util::NOT_EXIST_CODE)))?;
         let cycle = arg.cycle.unwrap();
 
         let standard_time_result = chrono::NaiveDateTime::parse_from_str(&arg.standard_time.clone().unwrap().as_str(),&util::FORMAT_Y_M_D_H_M_S);
@@ -761,7 +771,7 @@ impl SystemService {
 
     /// 删除提醒事项
     pub async fn delete_plan(&self, req: &HttpRequest,id: &u64) -> Result<u64> {
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         // 只能删除自己组织机构下的数据
         let write_result = Plan::delete_by_id_organize(pool!(),id,&user_info.organize).await;
         if write_result.is_err(){
@@ -781,7 +791,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         let mut arg= param.clone();
         // 用户只能看到自己组织下的数据
         arg.organize = Some(user_info.organize);
@@ -793,7 +803,7 @@ impl SystemService {
         }
         let total_row = count_result.unwrap().unwrap();
         if total_row <= 0 {
-            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST)));
+            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST_CODE)));
         }
         let mut result = Page::<PlanVO>::page_query( total_row, &extend);
         // 重新设置limit起始位置
@@ -811,14 +821,14 @@ impl SystemService {
 
     /// 提前完成计划提醒
     pub async fn advance_finish_plan(&self, req: &HttpRequest,id: &u64) -> Result<u64> {
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         let query_plan_wrap = Plan::select_by_id(pool!(), id).await;
         if query_plan_wrap.is_err() {
             error!("查询提醒事项异常：{}",query_plan_wrap.unwrap_err());
             return Err(Error::from("查询提醒事项失败!"));
         }
         let plan_warp = query_plan_wrap.unwrap().into_iter().next();
-        let mut plan_exist = plan_warp.ok_or_else(|| Error::from((format!("id={} 的提醒事项不存在!", id), util::NOT_EXIST)))?;
+        let mut plan_exist = plan_warp.ok_or_else(|| Error::from((format!("id={} 的提醒事项不存在!", id), util::NOT_EXIST_CODE)))?;
 
         // 提前准备任务归档数据
         let plan_archive = PlanArchive{
@@ -894,7 +904,7 @@ impl SystemService {
             begin_time:param.begin_time.clone(),
             end_time:param.end_time.clone()
         };
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         let mut arg= param.clone();
         // 用户只能看到自己组织下的数据
         arg.organize = Some(user_info.organize);
@@ -906,7 +916,7 @@ impl SystemService {
         }
         let total_row = count_result.unwrap().unwrap();
         if total_row <= 0 {
-            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST)));
+            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST_CODE)));
         }
         let mut result = Page::<PlanArchiveVO>::page_query( total_row, &extend);
         // 重新设置limit起始位置
@@ -926,7 +936,7 @@ impl SystemService {
     pub async fn edit_plan_archive(&self, req: &HttpRequest,arg: &PlanArchiveDTO) -> Result<u64> {
         let check_flag = arg.id.is_none();
         if check_flag{
-            return Err(Error::from(("归档计划id不能为空!",util::NOT_PARAMETER)));
+            return Err(Error::from(("归档计划id不能为空!",util::NOT_PARAMETER_CODE)));
         }
         let query_plan_archive_wrap = PlanArchive::select_by_id(pool!(), &arg.id.unwrap()).await;
         if query_plan_archive_wrap.is_err() {
@@ -935,7 +945,7 @@ impl SystemService {
         }
         let plan_archive_option = query_plan_archive_wrap.unwrap().into_iter().next();
 
-        let mut plan_archive_exist = plan_archive_option.ok_or_else(|| Error::from((format!("id={} 的归档提醒事项不存在!", arg.id.unwrap()), util::NOT_EXIST)))?;
+        let mut plan_archive_exist = plan_archive_option.ok_or_else(|| Error::from((format!("id={} 的归档提醒事项不存在!", arg.id.unwrap()), util::NOT_EXIST_CODE)))?;
         plan_archive_exist.status = arg.status;
         plan_archive_exist.display = arg.display;
         let result = PlanArchiveMapper::update_plan(pool!(),&plan_archive_exist).await;
@@ -943,14 +953,14 @@ impl SystemService {
             error!("在修改id={}的提醒事项时，发生异常:{}",arg.id.as_ref().unwrap(),result.unwrap_err());
             return Err(Error::from("提醒事项修改失败"));
         }
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         LogMapper::record_log_by_context(pool!(), &user_info, String::from("OX023")).await;
         return Ok(result?.rows_affected);
     }
 
     /// 归档计划提醒的删除
     pub async fn delete_plan_archive(&self, req: &HttpRequest,id: &u64) -> Result<u64> {
-        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(("获取用户信息失败，请登录",util::NOT_CHECKING)))?;
+        let user_info = UserContext::extract_user_by_request(req).await.ok_or_else(|| Error::from(util::NOT_AUTHORIZE_CODE))?;
         // 只能删除自己组织机构下的数据
         let write_result = PlanArchive::delete_by_id(pool!(),id).await;
         if write_result.is_err(){
@@ -976,7 +986,7 @@ impl SystemService {
         }
         let total_row = count_result.unwrap().unwrap();
         if total_row <= 0 {
-            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST)));
+            return Err(Error::from(("未查询到符合条件的数据",util::NOT_EXIST_CODE)));
         }
         let mut result = Page::<DbDumpLogVO>::page_query( total_row, &extend);
         // 重新设置limit起始位置

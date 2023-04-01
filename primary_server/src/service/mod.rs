@@ -1,6 +1,5 @@
 mod system_service;
 mod redis_service;
-
 use crate::service::redis_service::RedisService;
 
 pub use crate::config::config::ApplicationConfig;

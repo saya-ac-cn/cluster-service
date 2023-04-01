@@ -12,6 +12,7 @@ use std::{
     future::{ready, Ready},
     rc::Rc,
 };
+use crate::util;
 
 /// actix_web request中间件
 
@@ -75,7 +76,7 @@ where
                         Ok(_) => {}
                         Err(e) => {
                             let resp: RespVO<String> = RespVO {
-                                code: Some("-1".to_string()),
+                                code: Some(util::NOT_AUTHORIZE_CODE),
                                 msg: Some(format!("无权限访问:{}", e.to_string())),
                                 data: None,
                             };
@@ -85,7 +86,7 @@ where
                     Err(e) => {
                         //401 http code will exit login
                         let resp: RespVO<String> = RespVO {
-                            code: Some("-1".to_string()),
+                            code: Some(util::NOT_AUTHORIZE_CODE),
                             msg: Some(format!("Unauthorized for:{}", e.to_string())),
                             data: None,
                         };

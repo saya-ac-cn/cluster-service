@@ -1,7 +1,7 @@
 use std::sync::{Arc,Mutex};
 use std::time::Duration;
 
-use crate::error::{Error, Result};
+use crate::util::error::{Error, Result};
 use log::error;
 use redis::aio::Connection;
 use redis::{AsyncCommands, Commands, RedisResult};
@@ -23,7 +23,7 @@ impl RedisService {
         if conn.is_err() {
             let err = format!("RedisService connect fail:{}", conn.err().unwrap());
             error!("{}", err);
-            return Err(crate::error::Error::from(err));
+            return Err(crate::util::error::Error::from(err));
         }
         return Ok(conn.unwrap());
     }

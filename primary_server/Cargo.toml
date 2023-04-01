@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 rbs = { version = "4.3" }
-rbatis = { version = "4.3", features = [] }
+rbatis = { version = "4.3", features = ["debug_mode"]}
 rbdc-mysql={version="4.3"}
 #rbatis orm dep must use async-std(Because actix-web relies on tokio0.2)
 tokio = { version = "1", features = ["full"] }
