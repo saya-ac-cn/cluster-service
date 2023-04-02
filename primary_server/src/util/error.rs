@@ -23,7 +23,7 @@ impl Display for Error {
     // noinspection RsMatchCheck
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::E(error,code) => write!(f, "{}", error),
+            Error::E(error,code) => write!(f, "{}:{}", code,error),
         }
     }
 }
@@ -114,9 +114,9 @@ impl Clone for Error {
             Error::E(message,code) => {
                 Error::E(message.to_string(), *code)
             },
-            _ => {
-                Error::from(self.to_string())
-            }
+            // _ => {
+            //     Error::from(self.to_string())
+            // }
         }
     }
 
@@ -125,9 +125,9 @@ impl Clone for Error {
             Error::E(message,code) => {
                 *self = Error::E(message.to_string(), *code);
             },
-            _ => {
-                *self = Error::from(self.to_string());
-            }
+            //_ => {
+            //    *self = Error::from(self.to_string());
+            //}
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::domain::dto::db_dump_log::DbDumpLogPageDTO;
 use crate::domain::dto::page::ExtendPageDTO;
 use crate::domain::vo::db_dump_log::DbDumpLogVO;
 
-use crate::domain::table::*;
+use crate::domain::table::DbDumpLog;
 crud!(DbDumpLog {});
 
 pub struct DbDumpLogMapper{}

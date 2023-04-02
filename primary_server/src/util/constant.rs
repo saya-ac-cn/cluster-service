@@ -1,5 +1,3 @@
-use crate::util::error::Error;
-
 /// 定义的业务相关处理回执码
 /// 处理成功
 pub const SUCCESS_CODE: i32 = 0;

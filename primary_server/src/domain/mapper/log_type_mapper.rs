@@ -2,7 +2,7 @@ use rbatis::{Error};
 use rbatis::executor::Executor;
 use crate::domain::vo::log_type::LogTypeVO;
 
-use crate::domain::table::*;
+use crate::domain::table::LogType;
 crud!(LogType {});
 
 pub struct LogTypeMapper {}

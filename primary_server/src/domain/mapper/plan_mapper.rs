@@ -6,7 +6,6 @@ use crate::domain::dto::plan::PlanPageDTO;
 use crate::domain::dto::page::ExtendPageDTO;
 use crate::domain::vo::plan::PlanVO;
 
-use crate::domain::table::*;
 crud!(Plan {});
 impl_delete!(Plan {delete_by_id_organize(id:&u64,organize:&u64) => "`where id = #{id} and organize= #{organize}`"});
 impl_select!(Plan{select_by_id(id:&u64) => "`where id = #{id}`"});

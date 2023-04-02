@@ -9,7 +9,6 @@ use crate::domain::dto::page::{ExtendPageDTO};
 use crate::domain::vo::log::LogVO;
 use crate::util::date_time::{DateTimeUtil, DateUtils};
 
-use crate::domain::table::*;
 use crate::domain::vo::user_context::UserContext;
 use crate::util;
 crud!(Log {});

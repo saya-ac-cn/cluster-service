@@ -6,7 +6,6 @@ use crate::domain::dto::plan_archive::PlanArchivePageDTO;
 use crate::domain::dto::page::ExtendPageDTO;
 use crate::domain::vo::plan_archive::PlanArchiveVO;
 
-use crate::domain::table::*;
 crud!(PlanArchive {});
 impl_select!(PlanArchive{select_by_id(id:&u64) => "`where id = #{id}`"});
 impl_delete!(PlanArchive{delete_by_id(id:&u64) => "`where id = #{id}`"});

@@ -1,10 +1,9 @@
-use std::sync::{Arc,Mutex};
 use std::time::Duration;
 
 use crate::util::error::{Error, Result};
 use log::error;
 use redis::aio::Connection;
-use redis::{AsyncCommands, Commands, RedisResult};
+use redis::{AsyncCommands, RedisResult};
 ///Redis Cache service
 pub struct RedisService {
     pub client: redis::Client,

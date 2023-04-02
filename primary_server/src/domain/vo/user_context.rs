@@ -44,7 +44,7 @@ impl UserContext {
             }
             _ => {
                 error!("access_token is empty!");
-                return Err(Error::from((util::NOT_AUTHORIZE_CODE)));
+                return Err(Error::from(util::NOT_AUTHORIZE_CODE));
             }
         }
     }
@@ -92,7 +92,7 @@ impl UserContext {
                     }
                     true => {
                         error!("InvalidToken! token={}",token);
-                        return Err(Error::from((util::TOKEN_ERROR_CODE)));
+                        return Err(Error::from(util::TOKEN_ERROR_CODE));
                     }
                 }
             }

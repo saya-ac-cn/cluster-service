@@ -1,11 +1,17 @@
+use std::collections::HashMap;
+
 /// Config
 #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ApplicationConfig {
     pub debug: bool,
     /// 当前服务地址
     pub server_url: String,
-    /// 数据库地址
-    pub database_url: String,
+    /// 主数据库地址
+    pub primary_database_url: String,
+    /// 辅助业务数据库地址
+    pub business_database_url: String,
+    /// 财政相关数据库地址
+    pub financial_database_url: String,
     /// redis地址
     pub redis_url: String,
     /// 日志目录 "target/logs/"
@@ -35,6 +41,8 @@ pub struct ApplicationConfig {
     pub amap_key: String,
     /// 项目产生的数据目录
     pub data_dir: String,
+    /// 文件类型映射字典
+    pub file_type_map: HashMap<String, String>,
 }
 
 impl Default for ApplicationConfig {

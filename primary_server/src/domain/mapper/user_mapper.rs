@@ -5,7 +5,7 @@ use crate::domain::dto::user::UserPageDTO;
 use crate::domain::vo::user::UserOwnOrganizeVO;
 use crate::domain::table::User;
 
-use crate::domain::table::*;
+
 crud!(User {});
 impl_select!(User{select_by_account(account:&str) => "`where account = #{account}`"});
 impl_delete!(User{delete_by_account(account:&str) => "`where account = #{account}`"});

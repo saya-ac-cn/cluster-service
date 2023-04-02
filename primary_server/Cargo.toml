@@ -7,7 +7,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 rbs = { version = "4.3" }
-rbatis = { version = "4.3", features = ["debug_mode"]}
+# 线上环境，移除"debug_mode"模式
+rbatis = { version = "4.3", features = []}
 rbdc-mysql={version="4.3"}
 #rbatis orm dep must use async-std(Because actix-web relies on tokio0.2)
 tokio = { version = "1", features = ["full"] }
@@ -23,6 +24,8 @@ futures= { version = "0.3.21", default-features = false, features = ["std"] }
 #web server
 actix-web = { version = "4", default-features = false, features = ["macros"] }
 actix-http = "3"
+actix-multipart = "0.4"
+actix-files = "0.6.0"
 #snowflake
 rustflake = "0.1"
 #http client,use rust-tls replace to native tls
@@ -41,3 +44,12 @@ chrono = { version = "0.4", features = ["serde"] }
 cron_tab = "0.1.4"
 # 发送邮件
 lettre="0.10.0-alpha.5"
+#用于货币金额
+rust_decimal = "1.25.0"
+# 正则相关
+regex = "1.7.0"
+itertools="0.10.5"
+# markdown 转html
+markdown = "0.3"
+#base64（图片要用）
+base64 = "0.13.0"

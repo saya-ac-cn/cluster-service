@@ -3,7 +3,6 @@ use chrono::Local;
 use rustflake::Snowflake;
 use crate::service::CONTEXT;
 use crate::util;
-use crate::util::error::{Error, Result};
 use log::error;
 
 /// token工具类

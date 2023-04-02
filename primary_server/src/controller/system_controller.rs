@@ -1,6 +1,8 @@
 use actix_web::{web, get, post, put, delete, HttpRequest, Responder};
 use crate::domain::dto::db_dump_log::DbDumpLogPageDTO;
+use crate::domain::dto::journal::JournalTotalDTO;
 use crate::domain::dto::log::LogPageDTO;
+use crate::domain::dto::picture_base64::Base64PictureDTO;
 use crate::domain::dto::plan::{PlanDTO, PlanPageDTO};
 use crate::domain::dto::plan_archive::{PlanArchiveDTO, PlanArchivePageDTO};
 use crate::domain::dto::sign_in::SignInDTO;
@@ -91,12 +93,12 @@ pub async fn own_organize_user(req: HttpRequest) -> impl Responder {
     return RespVO::from_result(&user_data).resp_json();
 }
 
-// 保存用户头像
-// #[post("/user/logo")]
-// pub async fn user_upload_logo(req: HttpRequest, arg:web::Json<Base64PictureDTO>) -> impl Responder {
-//     let vo = CONTEXT.oss_service.upload_logo(&req,&arg.0).await;
-//     return RespVO::from_result(&vo).resp_json();
-// }
+/// 保存用户头像
+#[post("/user/logo")]
+pub async fn user_upload_logo(req: HttpRequest, arg:web::Json<Base64PictureDTO>) -> impl Responder {
+    let vo = CONTEXT.oss_service.upload_logo(&req,&arg.0).await;
+    return RespVO::from_result(&vo).resp_json();
+}
 
 /// 获取日志类别列表
 #[get("/log/type")]
@@ -122,19 +124,19 @@ pub async fn log_excel(req: HttpRequest, arg: web::Query<LogPageDTO>) -> impl Re
 }
 
 /// 统计近6个月的活跃情况
-// #[get("/log/total/pre6")]
-// pub async fn compute_pre6_logs(req: HttpRequest,arg: web::Query<JournalTotalDTO>) -> impl Responder {
-//     log::info!("compute_pre6_logs:{:?}", arg.clone().into_inner());
-//     let vo = CONTEXT.system_service.compute_pre6_logs(&req,&arg.archive_date.clone()).await;
-//     return RespVO::from_result(&vo).resp_json();
-// }
+#[get("/log/total/pre6")]
+pub async fn compute_pre6_logs(req: HttpRequest,arg: web::Query<JournalTotalDTO>) -> impl Responder {
+    log::info!("compute_pre6_logs:{:?}", arg.clone().into_inner());
+    let vo = CONTEXT.system_service.compute_pre6_logs(&req,&arg.archive_date.clone()).await;
+    return RespVO::from_result(&vo).resp_json();
+}
 
 ///  统计各个表的数据体量
-// #[get("/total/object/rows")]
-// pub async fn compute_object_rows(req: HttpRequest) -> impl Responder {
-//     let vo = CONTEXT.system_service.compute_object_rows(&req).await;
-//     return RespVO::from_result(&vo).resp_json();
-// }
+#[get("/total/object/rows")]
+pub async fn compute_object_rows(req: HttpRequest) -> impl Responder {
+    let vo = CONTEXT.system_service.compute_object_rows(&req).await;
+    return RespVO::from_result(&vo).resp_json();
+}
 
 
 /// 创建提醒事项
@@ -203,16 +205,16 @@ pub async fn delete_archive_plan(req: HttpRequest,path: web::Path<u64>) -> impl 
 
 /// 获取数据库备份日志分页列表
 #[get("/db/log/page")]
-pub async fn db_dump_log_page(req: HttpRequest, arg: web::Query<DbDumpLogPageDTO>) -> impl Responder {
+pub async fn db_dump_log_page(arg: web::Query<DbDumpLogPageDTO>) -> impl Responder {
     log::info!("db_dump_log_page:{:?}", arg.clone().into_inner());
-    let vo = CONTEXT.system_service.db_dump_log_page(&req,&arg.into_inner()).await;
+    let vo = CONTEXT.system_service.db_dump_log_page(&arg.into_inner()).await;
     return RespVO::from_result(&vo).resp_json();
 }
 
-// 获取计划安排-表格形式[公众]
-// #[get("/plan/{organize}")]
-// pub async fn plan_grid(path: web::Path<u64>,arg: web::Query<JournalTotalDTO>) -> impl Responder {
-//     let organize = path.into_inner();
-//     let vo = CONTEXT.system_service.plan_grid(&organize,&arg.archive_date.clone()).await;
-//     return RespVO::from_result(&vo).resp_json();
-// }
+/// 获取计划安排-表格形式[公众]
+#[get("/plan/{organize}")]
+pub async fn plan_grid(path: web::Path<u64>,arg: web::Query<JournalTotalDTO>) -> impl Responder {
+    let organize = path.into_inner();
+    let vo = CONTEXT.system_service.plan_grid(&organize,&arg.archive_date.clone()).await;
+    return RespVO::from_result(&vo).resp_json();
+}
